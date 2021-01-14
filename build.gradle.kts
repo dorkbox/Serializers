@@ -45,7 +45,7 @@ object Extras {
     const val id = "Serializers"
     const val vendor = "Dorkbox LLC"
     const val vendorUrl = "https://dorkbox.com"
-    const val url = "https://git.dorkbox.com/dorkbox/Storage"
+    const val url = "https://git.dorkbox.com/dorkbox/Serializers"
 
     val buildDate = Instant.now().toString()
 }
@@ -101,12 +101,13 @@ tasks.jar.get().apply {
 }
 
 dependencies {
-    compile("de.javakaffee:kryo-serializers:0.45")
-    // listed as compile only, since we will be using kryo ANYWAYS if we use this project, and we don't want a hard dependency.
-    compileOnly("com.esotericsoftware:kryo:5.0.0-RC8")
+    implementation("de.javakaffee:kryo-serializers:0.45")
 
-    // listed as compile only, since we will be using bouncy castle ANYWAYS if we use this project, and we don't want a hard dependency.
-    compileOnly("org.bouncycastle:bcprov-jdk15on:1.66")
+    // listed as compile only, since we will be using kryo ANYWAYS if we use this project. **We don't want a hard dependency.**
+    compileOnly("com.esotericsoftware:kryo:5.0.3")
+
+    // listed as compile only, since we will be using bouncy castle ANYWAYS if we use this project. **We don't want a hard dependency.**
+    compileOnly("org.bouncycastle:bcprov-jdk15on:1.67")
 }
 
 publishToSonatype {

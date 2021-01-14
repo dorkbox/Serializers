@@ -1,5 +1,19 @@
- - Storage - Storage system for Java
+ - Serializers - Kryo based serializers
    [The Apache Software License, Version 2.0]
-   https://git.dorkbox.com/dorkbox/Storage
+   https://git.dorkbox.com/dorkbox/Serializers
    Copyright 2021
      Dorkbox LLC
+
+   Extra license information
+     - Kryo Serializers - Extra kryo serializers
+       [The Apache Software License, Version 2.0]
+       https://github.com/magro/kryo-serializers
+       Copyright 2021
+         Martin Grotzke
+         Rafael Winterhalter
+
+     - Bouncy Castle Crypto - Lightweight cryptography API and JCE Extension
+       [The Apache Software License, Version 2.0]
+       http://www.bouncycastle.org
+       Copyright 2021
+         The Legion of the Bouncy Castle Inc
