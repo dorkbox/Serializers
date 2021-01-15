@@ -5,15 +5,37 @@
      Dorkbox LLC
 
    Extra license information
-     - Kryo Serializers - Extra kryo serializers
-       [The Apache Software License, Version 2.0]
-       https://github.com/magro/kryo-serializers
+     - Kryo - Fast and efficient binary object graph serialization framework for Java
+       [BSD 3-Clause License]
+       https://github.com/EsotericSoftware/kryo
        Copyright 2021
-         Martin Grotzke
-         Rafael Winterhalter
+         Nathan Sweet
+
+       Extra license information
+         - ReflectASM - 
+           [BSD 3-Clause License]
+           https://github.com/EsotericSoftware/reflectasm
+             Nathan Sweet
+
+         - Objenesis  - 
+           [The Apache Software License, Version 2.0]
+           http://objenesis.org
+             Objenesis Team and all contributors
+
+         - MinLog-SLF4J - 
+           [BSD 3-Clause License]
+           https://github.com/EsotericSoftware/minlog
+             Nathan Sweet
 
      - Bouncy Castle Crypto - Lightweight cryptography API and JCE Extension
        [The Apache Software License, Version 2.0]
        http://www.bouncycastle.org
        Copyright 2021
          The Legion of the Bouncy Castle Inc
+
+     - Kryo Serializers - Extra kryo serializers
+       [The Apache Software License, Version 2.0]
+       https://github.com/magro/kryo-serializers
+       Copyright 2021
+         Martin Grotzke
+         Rafael Winterhalter
