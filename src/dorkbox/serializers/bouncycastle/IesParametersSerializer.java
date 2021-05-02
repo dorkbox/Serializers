@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.serializers;
+package dorkbox.serializers.bouncycastle;
 
-import java.math.BigInteger;
-
-import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.crypto.params.IESParameters;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
@@ -28,50 +26,51 @@ import com.esotericsoftware.kryo.io.Output;
  * Only public keys are ever sent across the wire.
  */
 public
-class RsaPublicKeySerializer extends Serializer<RSAKeyParameters> {
+class IesParametersSerializer extends Serializer<IESParameters> {
 
     @Override
     public
-    void write(Kryo kryo, Output output, RSAKeyParameters key) {
+    void write(Kryo kryo, Output output, IESParameters key) {
         byte[] bytes;
         int length;
 
         ///////////
-        bytes = key.getModulus()
-                   .toByteArray();
+        bytes = key.getDerivationV();
         length = bytes.length;
 
         output.writeInt(length, true);
         output.writeBytes(bytes, 0, length);
 
-        /////////////
-        bytes = key.getExponent()
-                   .toByteArray();
+        ///////////
+        bytes = key.getEncodingV();
         length = bytes.length;
 
         output.writeInt(length, true);
         output.writeBytes(bytes, 0, length);
+
+        ///////////
+        output.writeInt(key.getMacKeySize(), true);
     }
 
     @SuppressWarnings("rawtypes")
     @Override
     public
-    RSAKeyParameters read(Kryo kryo, Input input, Class type) {
-        byte[] bytes;
+    IESParameters read(Kryo kryo, Input input, Class type) {
         int length;
 
         /////////////
         length = input.readInt(true);
-        bytes = new byte[length];
-        input.readBytes(bytes, 0, length);
-        BigInteger modulus = new BigInteger(bytes);
+        byte[] derivation = new byte[length];
+        input.readBytes(derivation, 0, length);
 
         /////////////
         length = input.readInt(true);
-        bytes = new byte[length];
-        input.readBytes(bytes, 0, length);
-        BigInteger exponent = new BigInteger(bytes);
+        byte[] encoding = new byte[length];
+        input.readBytes(encoding, 0, length);
 
-        return new RSAKeyParameters(false, modulus, exponent);
+        /////////////
+        int macKeySize = input.readInt(true);
+
+        return new IESParameters(derivation, encoding, macKeySize);
     }
 }

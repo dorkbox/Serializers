@@ -22,10 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Registration;
-import com.esotericsoftware.kryo.Serializer;
-
-import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 
 public
 class SerializationDefaults {
@@ -80,17 +76,6 @@ class SerializationDefaults {
         kryo.register(Collections.emptyNavigableSet().getClass());
         kryo.register(Collections.emptyNavigableMap().getClass());
 
-
-        // hacky way to register unmodifiable serializers
-        Kryo kryoHack = new Kryo() {
-            @Override
-            public
-            Registration register(final Class type, final Serializer serializer) {
-                kryo.register(type, serializer);
-                return null;
-            }
-        };
-
-        UnmodifiableCollectionsSerializer.registerSerializers(kryoHack);
+        UnmodifiableCollectionsSerializer.registerSerializers(kryo);
     }
 }
