@@ -28,17 +28,17 @@ gradle.startParameter.warningMode = WarningMode.All
 plugins {
     java
 
-    id("com.dorkbox.GradleUtils") version "1.12"
-    id("com.dorkbox.Licensing") version "2.5.2"
-    id("com.dorkbox.VersionUpdate") version "2.1"
-    id("com.dorkbox.GradlePublish") version "1.8"
+    id("com.dorkbox.GradleUtils") version "2.6"
+    id("com.dorkbox.Licensing") version "2.7"
+    id("com.dorkbox.VersionUpdate") version "2.3"
+    id("com.dorkbox.GradlePublish") version "1.11"
 }
 
 object Extras {
     // set for the project
     const val description = "Kryo based serializers"
     const val group = "com.dorkbox"
-    const val version = "1.0"
+    const val version = "1.1"
 
     // set as project.ext
     const val name = "Serializers"
@@ -54,9 +54,10 @@ object Extras {
 /////  assign 'Extras'
 ///////////////////////////////
 GradleUtils.load("$projectDir/../../gradle.properties", Extras)
-GradleUtils.fixIntellijPaths()
-GradleUtils.defaultResolutionStrategy()
+GradleUtils.defaults()
+//GradleUtils.compileConfiguration(JavaVersion.VERSION_11)
 GradleUtils.compileConfiguration(JavaVersion.VERSION_1_8)
+GradleUtils.jpms(JavaVersion.VERSION_1_9)
 
 
 licensing {
@@ -64,23 +65,14 @@ licensing {
         description(Extras.description)
         author(Extras.vendor)
         url(Extras.url)
-    }
-}
 
-sourceSets {
-    main {
-        java {
-            setSrcDirs(listOf("src"))
-
-            // want to include java files for the source. 'setSrcDirs' resets includes...
-            include("**/*.java")
+        extra("Kryo Serializers", License.APACHE_2) {
+            url("https://github.com/magro/kryo-serializers")
+            copyright(2021)
+            author("Martin Grotzke")
+            author("Rafael Winterhalter")
         }
     }
-}
-
-repositories {
-    mavenLocal() // this must be first!
-    jcenter()
 }
 
 tasks.jar.get().apply {
@@ -95,16 +87,14 @@ tasks.jar.get().apply {
         attributes["Implementation-Title"] = "${Extras.group}.${Extras.id}"
         attributes["Implementation-Version"] = Extras.buildDate
         attributes["Implementation-Vendor"] = Extras.vendor
-
-        attributes["Automatic-Module-Name"] = Extras.id
     }
 }
 
 dependencies {
-    implementation("de.javakaffee:kryo-serializers:0.45")
+//    implementation("com.dorkbox:MinLog:2.3")
 
     // listed as compile only, since we will be using kryo ANYWAYS if we use this project. **We don't want a hard dependency.**
-    compileOnly("com.esotericsoftware:kryo:5.0.3")
+    compileOnly("com.esotericsoftware:kryo:5.1.0")
 
     // listed as compile only, since we will be using bouncy castle ANYWAYS if we use this project. **We don't want a hard dependency.**
     compileOnly("org.bouncycastle:bcprov-jdk15on:1.67")

@@ -1,4 +1,4 @@
-Common Dorkbox Kryo Serializers
+Common Kryo Serializers
 
 ###### [![Dorkbox](https://badge.dorkbox.com/dorkbox.svg "Dorkbox")](https://git.dorkbox.com/dorkbox/Serializers) [![Github](https://badge.dorkbox.com/github.svg "Github")](https://github.com/dorkbox/Serializers) [![Gitlab](https://badge.dorkbox.com/gitlab.svg "Gitlab")](https://gitlab.com/dorkbox/Serializers)
 
@@ -11,7 +11,7 @@ Maven Info
     <dependency>
       <groupId>com.dorkbox</groupId>
       <artifactId>Serializers</artifactId>
-      <version>1.0</version>
+      <version>1.1</version>
     </dependency>
 </dependencies>
 ```
@@ -21,7 +21,7 @@ Gradle Info
 ````
 dependencies {
     ...
-    compile "com.dorkbox:Serializers:1.0"
+    implementation("com.dorkbox:Serializers:1.0")
 }
 ````
 

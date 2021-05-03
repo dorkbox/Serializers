@@ -5,6 +5,13 @@
      Dorkbox LLC
 
    Extra license information
+     - Kryo Serializers - 
+       [The Apache Software License, Version 2.0]
+       https://github.com/magro/kryo-serializers
+       Copyright 2021
+         Martin Grotzke
+         Rafael Winterhalter
+
      - Kryo - Fast and efficient binary object graph serialization framework for Java
        [BSD 3-Clause License]
        https://github.com/EsotericSoftware/kryo
@@ -32,10 +39,3 @@
        http://www.bouncycastle.org
        Copyright 2021
          The Legion of the Bouncy Castle Inc
-
-     - Kryo Serializers - Extra kryo serializers
-       [The Apache Software License, Version 2.0]
-       https://github.com/magro/kryo-serializers
-       Copyright 2021
-         Martin Grotzke
-         Rafael Winterhalter
