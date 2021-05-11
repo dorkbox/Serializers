@@ -25,10 +25,12 @@ import java.time.Instant
 gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS   // always show the stacktrace!
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "2.6"
+    id("com.dorkbox.GradleUtils") version "2.8"
     id("com.dorkbox.Licensing") version "2.7"
     id("com.dorkbox.VersionUpdate") version "2.3"
     id("com.dorkbox.GradlePublish") version "1.11"
+
+    kotlin("jvm") version "1.5.0"
 }
 
 object Extras {
@@ -91,10 +93,10 @@ dependencies {
 //    implementation("com.dorkbox:MinLog:2.3")
 
     // listed as compile only, since we will be using kryo ANYWAYS if we use this project. **We don't want a hard dependency.**
-    compileOnly("com.esotericsoftware:kryo:5.1.0")
+    compileOnly("com.esotericsoftware:kryo:5.1.1")
 
     // listed as compile only, since we will be using bouncy castle ANYWAYS if we use this project. **We don't want a hard dependency.**
-    compileOnly("org.bouncycastle:bcprov-jdk15on:1.67")
+    compileOnly("org.bouncycastle:bcprov-jdk15on:1.68")
 }
 
 publishToSonatype {
