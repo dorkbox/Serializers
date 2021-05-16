@@ -13,31 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.serializers;
+package dorkbox.serializers
 
-import java.io.File;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.Serializer
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
+import java.io.File
 
 /**
  * Serialize the path of a file instead of the File object
  */
-public
-class FileSerializer extends Serializer<File> {
-
-    @Override
-    public
-    void write(Kryo kryo, Output output, File file) {
-        output.writeString(file.getPath());
+class FileSerializer : Serializer<File>() {
+    override fun write(kryo: Kryo, output: Output, file: File) {
+        output.writeString(file.path)
     }
 
-    @Override
-    public
-    File read(final Kryo kryo, final Input input, final Class<? extends File> type) {
-        String path = input.readString();
-        return new File(path);
+    override fun read(kryo: Kryo, input: Input, type: Class<out File>): File {
+        val path = input.readString()
+        return File(path)
     }
 }

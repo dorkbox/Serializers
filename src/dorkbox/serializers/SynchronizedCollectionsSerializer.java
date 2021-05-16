@@ -75,7 +75,7 @@ public class SynchronizedCollectionsSerializer extends Serializer<Object> {
     public void write(final Kryo kryo, final Output output, final Object object) {
         try {
             final SynchronizedCollection collection = SynchronizedCollection.valueOfType( object.getClass() );
-            // the ordinal could be replaced by s.th. else (e.g. a explicitely managed "id")
+            // the ordinal could be replaced by something else (e.g. a explicitly managed "id")
             output.writeInt( collection.ordinal(), true );
             synchronized (object) {
                 kryo.writeClassAndObject( output, collection.sourceCollectionField.get( object ) );
@@ -189,10 +189,9 @@ public class SynchronizedCollectionsSerializer extends Serializer<Object> {
      */
     public static void registerSerializers( final Kryo kryo ) {
         final SynchronizedCollectionsSerializer serializer = new SynchronizedCollectionsSerializer();
-        SynchronizedCollection.values();
-        for ( final SynchronizedCollection item : SynchronizedCollection.values() ) {
+        SynchronizedCollection[] values = SynchronizedCollection.values();
+        for ( final SynchronizedCollection item : values) {
             kryo.register( item.type, serializer );
         }
     }
-
 }

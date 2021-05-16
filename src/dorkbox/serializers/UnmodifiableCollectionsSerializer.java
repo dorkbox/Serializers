@@ -58,6 +58,7 @@ public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
             SOURCE_MAP_FIELD = Class.forName("java.util.Collections$UnmodifiableMap" )
                 .getDeclaredField( "m" );
             SOURCE_MAP_FIELD.setAccessible( true );
+
         } catch ( final Exception e ) {
             throw new RuntimeException( "Could not access source collection" +
                     " field in java.util.Collections$UnmodifiableCollection.", e );
@@ -76,7 +77,8 @@ public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
     public void write(final Kryo kryo, final Output output, final Object object) {
         try {
             final UnmodifiableCollection unmodifiableCollection = UnmodifiableCollection.valueOfType( object.getClass() );
-            // the ordinal could be replaced by s.th. else (e.g. a explicitely managed "id")
+
+            // the ordinal could be replaced by something else (e.g. a explicitly managed "id")
             output.writeInt( unmodifiableCollection.ordinal(), true );
             kryo.writeClassAndObject( output, unmodifiableCollection.sourceCollectionField.get( object ) );
         } catch ( final RuntimeException e ) {
@@ -102,7 +104,7 @@ public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
       }
     }
 
-    private static enum UnmodifiableCollection {
+    private enum UnmodifiableCollection {
         COLLECTION( Collections.unmodifiableCollection( Arrays.asList( "" ) ).getClass(), SOURCE_COLLECTION_FIELD ){
             @Override
             public Object create( final Object sourceCollection ) {
@@ -151,7 +153,7 @@ public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
         private final Class<?> type;
         private final Field sourceCollectionField;
         
-        private UnmodifiableCollection( final Class<?> type, final Field sourceCollectionField ) {
+        UnmodifiableCollection( final Class<?> type, final Field sourceCollectionField ) {
             this.type = type;
             this.sourceCollectionField = sourceCollectionField;
         }
@@ -169,7 +171,6 @@ public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
             }
             throw new IllegalArgumentException( "The type " + type + " is not supported." );
         }
-        
     }
 
     /**
@@ -188,10 +189,9 @@ public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
      */
     public static void registerSerializers( final Kryo kryo ) {
         final UnmodifiableCollectionsSerializer serializer = new UnmodifiableCollectionsSerializer();
-        UnmodifiableCollection.values();
-        for ( final UnmodifiableCollection item : UnmodifiableCollection.values() ) {
+        UnmodifiableCollection[] values = UnmodifiableCollection.values();
+        for ( final UnmodifiableCollection item : values) {
             kryo.register( item.type, serializer );
         }
     }
-
 }
