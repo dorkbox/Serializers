@@ -24,6 +24,11 @@ import java.util.regex.Pattern
 
 object SerializationDefaults {
     /**
+     * Gets the version number.
+     */
+    const val version = "1.2"
+
+    /**
      * Allows for the kryo registration of sensible defaults in a common, well-used way.
      */
     fun register(kryo: Kryo) {

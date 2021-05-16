@@ -38,7 +38,7 @@ object Extras {
     // set for the project
     const val description = "Kryo based serializers"
     const val group = "com.dorkbox"
-    const val version = "1.1"
+    const val version = "1.2"
 
     // set as project.ext
     const val name = "Serializers"
@@ -99,14 +99,11 @@ tasks.jar.get().apply {
 }
 
 dependencies {
-//    implementation("com.dorkbox:MinLog:2.3")
-
     // listed as compile only, since we will be using kryo ANYWAYS if we use this project. **We don't want a hard dependency.**
     compileOnly("com.esotericsoftware:kryo:5.1.1")
 
     // listed as compile only, since we will be using bouncy castle ANYWAYS if we use this project. **We don't want a hard dependency.**
     compileOnly("org.bouncycastle:bcprov-jdk15on:1.68")
-
 
     testImplementation("com.esotericsoftware:kryo:5.1.1")
     testImplementation("org.bouncycastle:bcprov-jdk15on:1.68")
