@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import dorkbox.gradle.kotlin
 import java.time.Instant
 
 ///////////////////////////////
@@ -54,7 +55,6 @@ object Extras {
 ///////////////////////////////
 GradleUtils.load("$projectDir/../../gradle.properties", Extras)
 GradleUtils.defaults()
-//GradleUtils.compileConfiguration(JavaVersion.VERSION_11)
 GradleUtils.compileConfiguration(JavaVersion.VERSION_1_8)
 GradleUtils.jpms(JavaVersion.VERSION_1_9)
 
@@ -73,6 +73,15 @@ licensing {
         }
     }
 }
+
+sourceSets.main {
+    kotlin.include("**/*.java", "**/*.kt") // we have some java we depend on
+}
+
+sourceSets.test {
+    kotlin.include("**/*.java", "**/*.kt") // we have some java we depend on for unit tests
+}
+
 
 tasks.jar.get().apply {
     manifest {
@@ -97,6 +106,11 @@ dependencies {
 
     // listed as compile only, since we will be using bouncy castle ANYWAYS if we use this project. **We don't want a hard dependency.**
     compileOnly("org.bouncycastle:bcprov-jdk15on:1.68")
+
+
+    testImplementation("com.esotericsoftware:kryo:5.1.1")
+    testImplementation("org.bouncycastle:bcprov-jdk15on:1.68")
+    testImplementation("junit:junit:4.13.2")
 }
 
 publishToSonatype {
