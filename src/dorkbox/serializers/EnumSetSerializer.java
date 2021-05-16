@@ -16,69 +16,63 @@
  */
 package dorkbox.serializers;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
-
-import java.lang.reflect.Field;
 import java.util.EnumSet;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /**
  * A serializer for {@link EnumSet}s.
- * 
- * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a>
  */
-@SuppressWarnings( { "unchecked", "rawtypes" } )
-public class EnumSetSerializer extends Serializer<EnumSet<? extends Enum<?>>> {
-    
-    private static final Field TYPE_FIELD;
-    
-    static {
-        try {
-            TYPE_FIELD = EnumSet.class.getDeclaredField( "elementType" );
-            TYPE_FIELD.setAccessible( true );
-        } catch ( final Exception e ) {
-            throw new RuntimeException( "The EnumSet class seems to have changed, could not access expected field.", e );
-        }
-    }
+@SuppressWarnings({"unchecked", "rawtypes"})
+public
+class EnumSetSerializer extends Serializer<EnumSet<? extends Enum<?>>> {
 
     @Override
-    public EnumSet<? extends Enum<?>> copy (final Kryo kryo, final EnumSet<? extends Enum<?>> original) {
+    public
+    EnumSet<? extends Enum<?>> copy(final Kryo kryo, final EnumSet<? extends Enum<?>> original) {
         return original.clone();
     }
 
     @Override
-    public EnumSet read(final Kryo kryo, final Input input, final Class<? extends EnumSet<? extends Enum<?>>> type) {
-        final Class<Enum> elementType = kryo.readClass( input ).getType();
-        final EnumSet result = EnumSet.noneOf( elementType );
+    public
+    EnumSet read(final Kryo kryo, final Input input, final Class<? extends EnumSet<? extends Enum<?>>> type) {
+        final Class<Enum> elementType = kryo.readClass(input)
+                                            .getType();
+        final EnumSet result = EnumSet.noneOf(elementType);
         final int size = input.readInt(true);
         final Enum<?>[] enumConstants = elementType.getEnumConstants();
-        for ( int i = 0; i < size; i++ ) {
-            result.add( enumConstants[input.readInt(true)] );
+        for (int i = 0; i < size; i++) {
+            result.add(enumConstants[input.readInt(true)]);
         }
         return result;
     }
 
     @Override
-    public void write(final Kryo kryo, final Output output, final EnumSet<? extends Enum<?>> set) {
-        kryo.writeClass( output, getElementType( set ) );
-        output.writeInt( set.size(), true );
-        for (final Enum item : set) {
-            output.writeInt(item.ordinal(), true);
+    public
+    void write(final Kryo kryo, final Output output, final EnumSet<? extends Enum<?>> set) {
+        if (set.isEmpty()) {
+            EnumSet<? extends Enum<?>> tmp = EnumSet.complementOf(set);
+            if (tmp.isEmpty()) throw new KryoException("An EnumSet must have a defined Enum to be serialized.");
+            Class<Enum<?>> type = (Class<Enum<?>>) tmp.iterator()
+                                                      .next()
+                                                      .getDeclaringClass();
+            kryo.writeClass(output, type);
+            output.writeInt(0, true);
         }
+        else {
+            Class<Enum<?>> type = (Class<Enum<?>>) set.iterator()
+                                                      .next()
+                                                      .getDeclaringClass();
+            kryo.writeClass(output, type);
+            output.writeInt(set.size(), true);
 
-        if ( TRACE ) trace( "kryo", "Wrote EnumSet: " + set );
-    }
-
-    private Class<? extends Enum<?>> getElementType( final EnumSet<? extends Enum<?>> set ) {
-        try {
-            return (Class)TYPE_FIELD.get( set );
-        } catch ( final Exception e ) {
-            throw new RuntimeException( "Could not access keys field.", e );
+            for (final Enum item : set) {
+                output.writeInt(item.ordinal(), true);
+            }
         }
     }
 }
