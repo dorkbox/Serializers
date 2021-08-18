@@ -11,7 +11,7 @@ Maven Info
     <dependency>
       <groupId>com.dorkbox</groupId>
       <artifactId>Serializers</artifactId>
-      <version>1.2</version>
+      <version>2.0</version>
     </dependency>
 </dependencies>
 ```
