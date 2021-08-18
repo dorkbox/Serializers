@@ -26,19 +26,19 @@ import java.time.Instant
 gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS   // always show the stacktrace!
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "2.8"
-    id("com.dorkbox.Licensing") version "2.7"
-    id("com.dorkbox.VersionUpdate") version "2.3"
+    id("com.dorkbox.GradleUtils") version "2.9"
+    id("com.dorkbox.Licensing") version "2.9.2"
+    id("com.dorkbox.VersionUpdate") version "2.4"
     id("com.dorkbox.GradlePublish") version "1.11"
 
-    kotlin("jvm") version "1.5.0"
+    kotlin("jvm") version "1.5.21"
 }
 
 object Extras {
     // set for the project
     const val description = "Kryo based serializers"
     const val group = "com.dorkbox"
-    const val version = "1.2"
+    const val version = "2.1"
 
     // set as project.ext
     const val name = "Serializers"
@@ -99,14 +99,14 @@ tasks.jar.get().apply {
 }
 
 dependencies {
-    // listed as compile only, since we will be using kryo ANYWAYS if we use this project. **We don't want a hard dependency.**
-    compileOnly("com.esotericsoftware:kryo:5.1.1")
+    implementation("com.dorkbox:Updates:1.1")
 
-    // listed as compile only, since we will be using bouncy castle ANYWAYS if we use this project. **We don't want a hard dependency.**
-    compileOnly("org.bouncycastle:bcprov-jdk15on:1.68")
+    implementation("com.esotericsoftware:kryo:5.2.0")
 
-    testImplementation("com.esotericsoftware:kryo:5.1.1")
-    testImplementation("org.bouncycastle:bcprov-jdk15on:1.68")
+    // listed as compile only, since we will be optionally be using bouncy castle if we use this project. **We don't want a hard dependency.**
+    compileOnly("org.bouncycastle:bcprov-jdk15on:1.69")
+
+    testImplementation("org.bouncycastle:bcprov-jdk15on:1.69")
     testImplementation("junit:junit:4.13.2")
 }
 

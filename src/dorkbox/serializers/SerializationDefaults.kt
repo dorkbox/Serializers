@@ -26,7 +26,12 @@ object SerializationDefaults {
     /**
      * Gets the version number.
      */
-    const val version = "1.2"
+    const val version = "2.1"
+
+    init {
+        // Add this project to the updates system, which verifies this class + UUID + version information
+        dorkbox.updates.Updates.add(SerializationDefaults::class.java, "316353f5338341a8a3edc01d702703f8", version)
+    }
 
     /**
      * Allows for the kryo registration of sensible defaults in a common, well-used way.
