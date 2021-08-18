@@ -32,7 +32,7 @@ interface SerializationManager<IO> {
      * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when using this
      * method. The order must be the same at deserialization as it was for serialization.
      */
-    fun <T> register(clazz: Class<T>?): SerializationManager<*>?
+    fun <T> register(clazz: Class<T>): SerializationManager<*>
 
     /**
      * Registers the class using the specified ID. If the ID is already in use by the same type, the old entry is overwritten. If the ID
@@ -47,7 +47,7 @@ interface SerializationManager<IO> {
      * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and String, but
      * these IDs can be repurposed.
      */
-    fun <T> register(clazz: Class<T>?, id: Int): SerializationManager<*>?
+    fun <T> register(clazz: Class<T>, id: Int): SerializationManager<*>
 
     /**
      * Registers the class using the lowest, next available integer ID and the specified serializer. If the class is already registered,
@@ -60,7 +60,7 @@ interface SerializationManager<IO> {
      * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when using this
      * method. The order must be the same at deserialization as it was for serialization.
      */
-    fun <T> register(clazz: Class<T>?, serializer: Serializer<T>?): SerializationManager<*>?
+    fun <T> register(clazz: Class<T>, serializer: Serializer<T>): SerializationManager<*>
 
     /**
      * Registers the class using the specified ID and serializer. If the ID is already in use by the same type, the old entry is
@@ -75,11 +75,10 @@ interface SerializationManager<IO> {
      * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and String, but
      * these IDs can be repurposed.
      */
-    fun <T> register(clazz: Class<T>?, serializer: Serializer<T>?, id: Int): SerializationManager<*>?
+    fun <T> register(clazz: Class<T>, serializer: Serializer<T>, id: Int): SerializationManager<*>
 
     /**
      * Waits until a kryo is available to write, using CAS operations to prevent having to synchronize.
-     *
      *
      * There is a small speed penalty if there were no kryo's available to use.
      */
@@ -98,11 +97,11 @@ interface SerializationManager<IO> {
      * Writes the class and object using an available kryo instance
      */
     @Throws(IOException::class)
-    fun writeFullClassAndObject(output: Output?, value: Any?)
+    fun writeFullClassAndObject(output: Output, value: Any?)
 
     /**
      * Returns a class read from the input
      */
     @Throws(IOException::class)
-    fun readFullClassAndObject(input: Input?): Any?
+    fun readFullClassAndObject(input: Input): Any?
 }
