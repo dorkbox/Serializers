@@ -7,5 +7,7 @@ module dorkbox.serializers {
 
     requires static org.bouncycastle.provider;
 
+    requires kotlin.stdlib;
+
     requires java.base;
 }
