@@ -11,7 +11,7 @@ Maven Info
     <dependency>
       <groupId>com.dorkbox</groupId>
       <artifactId>Serializers</artifactId>
-      <version>2.2</version>
+      <version>2.3</version>
     </dependency>
 </dependencies>
 ```
@@ -21,7 +21,7 @@ Gradle Info
 ````
 dependencies {
     ...
-    implementation("com.dorkbox:Serializers:1.0")
+    implementation("com.dorkbox:Serializers:2.3")
 }
 ````
 
