@@ -38,7 +38,7 @@ object Extras {
     // set for the project
     const val description = "Kryo based serializers"
     const val group = "com.dorkbox"
-    const val version = "2.4"
+    const val version = "2.5"
 
     // set as project.ext
     const val name = "Serializers"
