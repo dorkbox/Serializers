@@ -16,22 +16,44 @@
 package dorkbox.serializers
 
 import com.esotericsoftware.kryo.Kryo
+import java.io.File
 import java.io.IOException
 import java.math.BigDecimal
+import java.net.Inet4Address
+import java.net.Inet6Address
 import java.net.URI
+import java.nio.file.Path
 import java.util.*
 import java.util.regex.Pattern
 
+@Suppress("MemberVisibilityCanBePrivate")
 object SerializationDefaults {
     /**
      * Gets the version number.
      */
-    const val version = "2.3"
+    const val version = "2.4"
 
     init {
         // Add this project to the updates system, which verifies this class + UUID + version information
         dorkbox.updates.Updates.add(SerializationDefaults::class.java, "316353f5338341a8a3edc01d702703f8", version)
     }
+
+    val regexSerializer by lazy { RegexSerializer() }
+    val uriSerializer by lazy { URISerializer() }
+    val uuidSerializer by lazy { UUIDSerializer() }
+
+    val collectionsSingletonMapSerializer by lazy { CollectionsSingletonMapSerializer() }
+    val collectionsSingletonListSerializer by lazy { CollectionsSingletonListSerializer() }
+    val collectionsSingletonSetSerializer by lazy { CollectionsSingletonSetSerializer() }
+
+    val enumSetSerializer by lazy { EnumSetSerializer() }
+    val enumMapSerializer by lazy { EnumMapSerializer() }
+    val arraysAsListSerializer by lazy { ArraysAsListSerializer() }
+
+    val inet4AddressSerializer by lazy { Inet4AddressSerializer() }
+    val inet6AddressSerializer by lazy { Inet6AddressSerializer() }
+    val fileSerializer by lazy { FileSerializer() }
+    val pathSerializer by lazy { PathSerializer() }
 
     /**
      * Allows for the kryo registration of sensible defaults in a common, well-used way.
@@ -74,9 +96,9 @@ object SerializationDefaults {
         kryo.register(HashMap::class.java)
         kryo.register(HashSet::class.java)
 
-        kryo.register(EnumSet::class.java, EnumSetSerializer())
-        kryo.register(EnumMap::class.java, EnumMapSerializer())
-        kryo.register(Arrays.asList("").javaClass, ArraysAsListSerializer())
+        kryo.register(EnumSet::class.java, enumSetSerializer)
+        kryo.register(EnumMap::class.java, enumMapSerializer)
+        kryo.register(Arrays.asList("").javaClass, arraysAsListSerializer)
 
         kryo.register(emptyList<Any>().javaClass)
         kryo.register(emptySet<Any>().javaClass)
@@ -88,13 +110,18 @@ object SerializationDefaults {
         kryo.register(Collections.emptyNavigableSet<Any>().javaClass)
         kryo.register(Collections.emptyNavigableMap<Any, Any>().javaClass)
 
-        kryo.register(Collections.singletonMap("", "").javaClass, CollectionsSingletonMapSerializer())
-        kryo.register(listOf("").javaClass, CollectionsSingletonListSerializer())
-        kryo.register(setOf("").javaClass, CollectionsSingletonSetSerializer())
+        kryo.register(Collections.singletonMap("", "").javaClass, collectionsSingletonMapSerializer)
+        kryo.register(listOf("").javaClass, collectionsSingletonListSerializer)
+        kryo.register(setOf("").javaClass, collectionsSingletonSetSerializer)
 
-        kryo.register(Pattern::class.java, RegexSerializer())
-        kryo.register(URI::class.java, URISerializer())
-        kryo.register(UUID::class.java, UUIDSerializer())
+        kryo.register(Pattern::class.java, regexSerializer)
+        kryo.register(URI::class.java, uriSerializer)
+        kryo.register(UUID::class.java, uuidSerializer)
+
+        kryo.register(Inet4Address::class.java, inet4AddressSerializer)
+        kryo.register(Inet6Address::class.java, inet6AddressSerializer)
+        kryo.register(File::class.java, fileSerializer)
+        kryo.register(Path::class.java, pathSerializer)
 
         UnmodifiableCollectionsSerializer.registerSerializers(kryo)
         SynchronizedCollectionsSerializer.registerSerializers(kryo)

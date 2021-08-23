@@ -19,22 +19,24 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import java.io.File
+import java.nio.file.Path
+import java.nio.file.Paths
+
 
 /**
- * Serialize the path of a file instead of the File object
+ * Serialize the path of a file instead of the Path object
  */
-class FileSerializer : Serializer<File>() {
+class PathSerializer : Serializer<Path>() {
     init {
         isImmutable = true
     }
 
-    override fun write(kryo: Kryo, output: Output, file: File) {
-        output.writeString(file.path)
+    override fun write(kryo: Kryo, output: Output, path: Path) {
+        output.writeString(path.toString())
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<out File>): File {
+    override fun read(kryo: Kryo, input: Input, type: Class<out Path>): Path {
         val path = input.readString()
-        return File(path)
+        return Paths.get(path)
     }
 }

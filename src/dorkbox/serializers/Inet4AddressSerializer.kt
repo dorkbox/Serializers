@@ -8,6 +8,9 @@ import java.net.Inet4Address
 import java.net.InetAddress
 
 class Inet4AddressSerializer : Serializer<Inet4Address>() {
+    init {
+        isImmutable = true
+    }
 
     override fun write(kryo: Kryo, output: Output, inetAddress: Inet4Address) {
         output.writeBytes(inetAddress.address)
