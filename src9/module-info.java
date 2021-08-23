@@ -2,6 +2,8 @@ module dorkbox.serializers {
     exports dorkbox.serializers;
     exports dorkbox.serializers.bouncycastle;
 
+    requires dorkbox.updates;
+
     requires com.esotericsoftware.kryo;
     requires com.esotericsoftware.reflectasm;
 
