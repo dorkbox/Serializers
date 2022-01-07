@@ -2,14 +2,12 @@ module dorkbox.serializers {
     exports dorkbox.serializers;
     exports dorkbox.serializers.bouncycastle;
 
-    requires dorkbox.updates;
+    requires transitive dorkbox.updates;
 
-    requires com.esotericsoftware.kryo;
-    requires com.esotericsoftware.reflectasm;
+    requires transitive com.esotericsoftware.kryo;
+    requires transitive com.esotericsoftware.reflectasm;
 
     requires static org.bouncycastle.provider;
 
-    requires kotlin.stdlib;
-
-    requires java.base;
+    requires transitive kotlin.stdlib;
 }

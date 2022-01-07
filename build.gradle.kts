@@ -26,12 +26,12 @@ import java.time.Instant
 gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS   // always show the stacktrace!
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "2.9"
-    id("com.dorkbox.Licensing") version "2.9.2"
+    id("com.dorkbox.GradleUtils") version "2.16"
+    id("com.dorkbox.Licensing") version "2.10"
     id("com.dorkbox.VersionUpdate") version "2.4"
-    id("com.dorkbox.GradlePublish") version "1.11"
+    id("com.dorkbox.GradlePublish") version "1.12"
 
-    kotlin("jvm") version "1.5.21"
+    kotlin("jvm") version "1.6.10"
 }
 
 object Extras {
@@ -74,12 +74,25 @@ licensing {
     }
 }
 
-sourceSets.main {
-    kotlin.include("**/*.java", "**/*.kt") // we have some java we depend on
-}
+kotlin {
+    sourceSets {
+        main {
+            kotlin {
+//                setSrcDirs(listOf("src"))
 
-sourceSets.test {
-    kotlin.include("**/*.java", "**/*.kt") // we have some java we depend on for unit tests
+                // want to include kotlin files for the source. 'setSrcDirs' resets includes...
+                include("**/*.java", "**/*.kt")
+            }
+        }
+        test {
+            kotlin {
+//                setSrcDirs(listOf("src", "test"))
+
+                // want to include kotlin files for the source. 'setSrcDirs' resets includes...
+                include("**/*.java", "**/*.kt")
+            }
+        }
+    }
 }
 
 
@@ -99,12 +112,12 @@ tasks.jar.get().apply {
 }
 
 dependencies {
-    implementation("com.dorkbox:Updates:1.1")
+    api("com.dorkbox:Updates:1.1")
 
-    implementation("com.esotericsoftware:kryo:5.2.0")
+    api("com.esotericsoftware:kryo:5.2.1")
 
     // listed as compile only, since we will be optionally be using bouncy castle if we use this project. **We don't want a hard dependency.**
-    compileOnly("org.bouncycastle:bcprov-jdk15on:1.69")
+    compileOnly("org.bouncycastle:bcprov-jdk15on:1.70")
 
     testImplementation("org.bouncycastle:bcprov-jdk15on:1.69")
     testImplementation("junit:junit:4.13.2")
