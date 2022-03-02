@@ -103,7 +103,7 @@ tasks.jar.get().apply {
 }
 
 dependencies {
-    implementation("com.dorkbox:Updates:1.1")
+    api("com.dorkbox:Updates:1.1")
 
     // optionally using KRYO
     compileOnly("com.esotericsoftware:kryo:5.3.0")
