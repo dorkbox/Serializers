@@ -1,7 +1,7 @@
  - Serializers - Kryo based serializers
    [The Apache Software License, Version 2.0]
    https://git.dorkbox.com/dorkbox/Serializers
-   Copyright 2021
+   Copyright 2022
      Dorkbox LLC
 
    Extra license information
@@ -20,16 +20,10 @@
        Kotlin Compiler, Test Data+Libraries, and Tools repository contain third-party code, to which different licenses may apply
        See: https://github.com/JetBrains/kotlin/blob/master/license/README.md
 
-     - Bouncy Castle Crypto - Lightweight cryptography API and JCE Extension
-       [The Apache Software License, Version 2.0]
-       http://www.bouncycastle.org
-       Copyright 2021
-         The Legion of the Bouncy Castle Inc
-
      - Kryo - Fast and efficient binary object graph serialization framework for Java
        [BSD 3-Clause License]
        https://github.com/EsotericSoftware/kryo
-       Copyright 2021
+       Copyright 2022
          Nathan Sweet
 
        Extra license information
@@ -47,6 +41,12 @@
            [BSD 3-Clause License]
            https://github.com/EsotericSoftware/minlog
              Nathan Sweet
+
+     - Bouncy Castle Crypto - Lightweight cryptography API and JCE Extension
+       [The Apache Software License, Version 2.0]
+       http://www.bouncycastle.org
+       Copyright 2022
+         The Legion of the Bouncy Castle Inc
 
      - Updates - Software Update Management
        [The Apache Software License, Version 2.0]

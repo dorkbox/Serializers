@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import dorkbox.gradle.kotlin
 import java.time.Instant
 
 ///////////////////////////////
@@ -26,19 +25,19 @@ import java.time.Instant
 gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS   // always show the stacktrace!
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "2.9"
-    id("com.dorkbox.Licensing") version "2.9.2"
+    id("com.dorkbox.GradleUtils") version "2.16"
+    id("com.dorkbox.Licensing") version "2.12"
     id("com.dorkbox.VersionUpdate") version "2.4"
-    id("com.dorkbox.GradlePublish") version "1.11"
+    id("com.dorkbox.GradlePublish") version "1.12"
 
-    kotlin("jvm") version "1.5.21"
+    kotlin("jvm") version "1.6.10"
 }
 
 object Extras {
     // set for the project
     const val description = "Kryo based serializers"
     const val group = "com.dorkbox"
-    const val version = "2.5"
+    const val version = "2.6"
 
     // set as project.ext
     const val name = "Serializers"
@@ -74,12 +73,17 @@ licensing {
     }
 }
 
-sourceSets.main {
-    kotlin.include("**/*.java", "**/*.kt") // we have some java we depend on
-}
 
-sourceSets.test {
-    kotlin.include("**/*.java", "**/*.kt") // we have some java we depend on for unit tests
+kotlin {
+    sourceSets {
+        main {
+            // we have some java we depend on
+            kotlin.include("**/*.java", "**/*.kt")
+        }
+        test {
+            kotlin.include("**/*.java", "**/*.kt")
+        }
+    }
 }
 
 
@@ -101,13 +105,17 @@ tasks.jar.get().apply {
 dependencies {
     implementation("com.dorkbox:Updates:1.1")
 
-    implementation("com.esotericsoftware:kryo:5.2.0")
+    // optionally using KRYO
+    compileOnly("com.esotericsoftware:kryo:5.3.0")
 
+    val bcVersion = "1.70"
     // listed as compile only, since we will be optionally be using bouncy castle if we use this project. **We don't want a hard dependency.**
-    compileOnly("org.bouncycastle:bcprov-jdk15on:1.69")
+    compileOnly("org.bouncycastle:bcprov-jdk15on:$bcVersion")
 
-    testImplementation("org.bouncycastle:bcprov-jdk15on:1.69")
+
+    testImplementation("org.bouncycastle:bcprov-jdk15on:$bcVersion")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.esotericsoftware:kryo:5.3.0")
 }
 
 publishToSonatype {
