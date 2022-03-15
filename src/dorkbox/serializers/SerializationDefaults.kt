@@ -16,6 +16,8 @@
 package dorkbox.serializers
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.Registration
+import com.esotericsoftware.kryo.Serializer
 import java.io.File
 import java.io.IOException
 import java.math.BigDecimal
@@ -31,7 +33,7 @@ object SerializationDefaults {
     /**
      * Gets the version number.
      */
-    const val version = "2.6"
+    const val version = "2.7"
 
     init {
         // Add this project to the updates system, which verifies this class + UUID + version information
@@ -53,6 +55,27 @@ object SerializationDefaults {
     val inet4AddressSerializer by lazy { Inet4AddressSerializer() }
     val inet6AddressSerializer by lazy { Inet6AddressSerializer() }
     val fileSerializer by lazy { FileSerializer() }
+
+    /**
+     * Allows for the kryo registration of sensible defaults in a common, well-used way. Uses a hashmap to return registration data
+     */
+    fun register(): MutableMap<Class<*>, Serializer<*>?> {
+        val registeredClasses: MutableMap<Class<*>, Serializer<*>?> = mutableMapOf()
+        val kryo = object : Kryo() {
+            override fun register(type: Class<*>): Registration {
+                registeredClasses[type] = null
+                return super.register(type)
+            }
+
+            override fun register(type: Class<*>, serializer: Serializer<*>?): Registration {
+                registeredClasses[type] = serializer
+                return super.register(type, serializer)
+            }
+        }
+
+        register(kryo)
+        return registeredClasses
+    }
 
     /**
      * Allows for the kryo registration of sensible defaults in a common, well-used way.
