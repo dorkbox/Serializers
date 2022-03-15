@@ -53,7 +53,6 @@ object SerializationDefaults {
     val inet4AddressSerializer by lazy { Inet4AddressSerializer() }
     val inet6AddressSerializer by lazy { Inet6AddressSerializer() }
     val fileSerializer by lazy { FileSerializer() }
-    val pathSerializer by lazy { PathSerializer() }
 
     /**
      * Allows for the kryo registration of sensible defaults in a common, well-used way.
@@ -121,7 +120,6 @@ object SerializationDefaults {
         kryo.register(Inet4Address::class.java, inet4AddressSerializer)
         kryo.register(Inet6Address::class.java, inet6AddressSerializer)
         kryo.register(File::class.java, fileSerializer)
-        kryo.register(Path::class.java, pathSerializer)
 
         UnmodifiableCollectionsSerializer.registerSerializers(kryo)
         SynchronizedCollectionsSerializer.registerSerializers(kryo)
