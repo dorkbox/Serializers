@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,19 @@ import java.time.Instant
 gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS   // always show the stacktrace!
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "2.16"
-    id("com.dorkbox.Licensing") version "2.12"
-    id("com.dorkbox.VersionUpdate") version "2.4"
-    id("com.dorkbox.GradlePublish") version "1.12"
+    id("com.dorkbox.GradleUtils") version "3.9"
+    id("com.dorkbox.Licensing") version "2.19.1"
+    id("com.dorkbox.VersionUpdate") version "2.5"
+    id("com.dorkbox.GradlePublish") version "1.17"
 
-    kotlin("jvm") version "1.6.10"
+    kotlin("jvm") version "1.8.0"
 }
 
 object Extras {
     // set for the project
     const val description = "Kryo based serializers"
     const val group = "com.dorkbox"
-    const val version = "2.7"
+    const val version = "2.8"
 
     // set as project.ext
     const val name = "Serializers"
@@ -106,7 +106,7 @@ dependencies {
     api("com.dorkbox:Updates:1.1")
 
     // optionally using KRYO
-    compileOnly("com.esotericsoftware:kryo:5.3.0")
+    compileOnly("com.esotericsoftware:kryo:5.4.0")
 
     val bcVersion = "1.70"
     // listed as compile only, since we will be optionally be using bouncy castle if we use this project. **We don't want a hard dependency.**
