@@ -1,7 +1,7 @@
  - Serializers - Kryo based serializers
    [The Apache Software License, Version 2.0]
    https://git.dorkbox.com/dorkbox/Serializers
-   Copyright 2022
+   Copyright 2023
      Dorkbox LLC
 
    Extra license information
@@ -23,7 +23,7 @@
      - Kryo - Fast and efficient binary object graph serialization framework for Java
        [BSD 3-Clause License]
        https://github.com/EsotericSoftware/kryo
-       Copyright 2022
+       Copyright 2023
          Nathan Sweet
 
        Extra license information
@@ -32,7 +32,7 @@
            https://github.com/EsotericSoftware/reflectasm
              Nathan Sweet
 
-         - Objenesis  - 
+         - Objenesis - 
            [The Apache Software License, Version 2.0]
            http://objenesis.org
              Objenesis Team and all contributors
@@ -45,7 +45,7 @@
      - Bouncy Castle Crypto - Lightweight cryptography API and JCE Extension
        [The Apache Software License, Version 2.0]
        http://www.bouncycastle.org
-       Copyright 2022
+       Copyright 2023
          The Legion of the Bouncy Castle Inc
 
      - Updates - Software Update Management
