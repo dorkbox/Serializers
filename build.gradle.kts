@@ -14,7 +14,28 @@
  * limitations under the License.
  */
 
-import java.time.Instant
+import Build_gradle.Extras.id
+import Build_gradle.Extras.url
+import Build_gradle.Extras.vendor
+import Build_gradle.Extras.vendorUrl
+import org.gradle.internal.impldep.org.fusesource.jansi.AnsiRenderer.test
+import kotlin.text.Typography.copyright
+
+/*
+ * Copyright 2023 dorkbox, llc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 ///////////////////////////////
 //////    PUBLISH TO SONATYPE / MAVEN CENTRAL
@@ -25,10 +46,10 @@ import java.time.Instant
 gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS   // always show the stacktrace!
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "3.9"
-    id("com.dorkbox.Licensing") version "2.19.1"
-    id("com.dorkbox.VersionUpdate") version "2.5"
-    id("com.dorkbox.GradlePublish") version "1.17"
+    id("com.dorkbox.GradleUtils") version "3.17"
+    id("com.dorkbox.Licensing") version "2.22"
+    id("com.dorkbox.VersionUpdate") version "2.8"
+    id("com.dorkbox.GradlePublish") version "1.18"
 
     kotlin("jvm") version "1.8.0"
 }
@@ -45,8 +66,6 @@ object Extras {
     const val vendor = "Dorkbox LLC"
     const val vendorUrl = "https://dorkbox.com"
     const val url = "https://git.dorkbox.com/dorkbox/Serializers"
-
-    val buildDate = Instant.now().toString()
 }
 
 ///////////////////////////////
@@ -97,7 +116,7 @@ tasks.jar.get().apply {
         attributes["Specification-Vendor"] = Extras.vendor
 
         attributes["Implementation-Title"] = "${Extras.group}.${Extras.id}"
-        attributes["Implementation-Version"] = Extras.buildDate
+        attributes["Implementation-Version"] = GradleUtils.now()
         attributes["Implementation-Vendor"] = Extras.vendor
     }
 }
@@ -106,7 +125,7 @@ dependencies {
     api("com.dorkbox:Updates:1.1")
 
     // optionally using KRYO
-    compileOnly("com.esotericsoftware:kryo:5.4.0")
+    compileOnly("com.esotericsoftware:kryo:5.5.0")
 
     val bcVersion = "1.70"
     // listed as compile only, since we will be optionally be using bouncy castle if we use this project. **We don't want a hard dependency.**
