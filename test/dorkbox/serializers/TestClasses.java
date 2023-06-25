@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,9 +140,7 @@ public class TestClasses {
     }
 
     @SuppressWarnings("ConstantConditions")
-    public static class Person implements Serializable {
-
-        private static final long serialVersionUID = 1L;
+    public static class Person {
 
         public enum Gender {
                 MALE,
@@ -195,11 +193,6 @@ public class TestClasses {
             return _friends;
         }
 
-        /**
-         * @param friends
-         * @param friends2
-         * @return
-         */
         private boolean flatEquals( final Collection<?> c1, final Collection<?> c2 ) {
             return c1 == c2 || c1 != null && c2 != null && c1.size() == c2.size();
         }

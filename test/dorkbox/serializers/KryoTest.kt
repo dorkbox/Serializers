@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,880 +13,877 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.serializers;
+package dorkbox.serializers
 
-import static dorkbox.serializers.TestClasses.Person.Gender;
-import static dorkbox.serializers.TestClasses.createPerson;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.KryoException
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.serializers.DefaultSerializers
+import dorkbox.serializers.TestClasses.ClassWithoutDefaultConstructor
+import dorkbox.serializers.TestClasses.CounterHolder
+import dorkbox.serializers.TestClasses.CounterHolderArray
+import dorkbox.serializers.TestClasses.Email
+import dorkbox.serializers.TestClasses.HashMapWithIntConstructorOnly
+import dorkbox.serializers.TestClasses.HolderArray
+import dorkbox.serializers.TestClasses.HolderList
+import dorkbox.serializers.TestClasses.MyContainer
+import dorkbox.serializers.TestClasses.Person
+import dorkbox.serializers.TestClasses.Person.Gender
+import org.junit.Assert
+import org.junit.Before
+import org.junit.Test
+import java.lang.reflect.Modifier
+import java.math.BigDecimal
+import java.net.URI
+import java.sql.Time
+import java.sql.Timestamp
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Currency;
-import java.util.Date;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Pattern;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-
-import dorkbox.serializers.TestClasses.ClassWithoutDefaultConstructor;
-import dorkbox.serializers.TestClasses.Container;
-import dorkbox.serializers.TestClasses.CounterHolder;
-import dorkbox.serializers.TestClasses.CounterHolderArray;
-import dorkbox.serializers.TestClasses.Email;
-import dorkbox.serializers.TestClasses.HashMapWithIntConstructorOnly;
-import dorkbox.serializers.TestClasses.Holder;
-import dorkbox.serializers.TestClasses.HolderArray;
-import dorkbox.serializers.TestClasses.HolderList;
-import dorkbox.serializers.TestClasses.MyContainer;
-import dorkbox.serializers.TestClasses.Person;
-
+import java.util.*
+import java.util.concurrent.atomic.*
+import java.util.regex.*
 
 /**
- * Test for {@link Kryo} serialization.
+ * Test for [Kryo] serialization.
  *
- * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a>
+ * @author [Martin Grotzke](mailto:martin.grotzke@javakaffee.de)
  */
-public class KryoTest {
-    
-    private Kryo _kryo;
+class KryoTest {
+    @Volatile
+    private var _kryo: Kryo = Kryo()
 
     @Before
-    public void beforeTest() {
-        _kryo = new Kryo() {
-//            @Override
-//            public Serializer<?> getDefaultSerializer( final Class type ) {
-//                if ( EnumSet.class.isAssignableFrom( type ) ) {
-//                    return new EnumMapSerializer();
-//                }
-//                if ( EnumMap.class.isAssignableFrom( type ) ) {
-//                    return new EnumMapSerializer();
-//                }
-//                return super.getDefaultSerializer( type );
-//            }
-        };
+    fun beforeTest() {
+        _kryo = object : Kryo() { //            @Override
+            //            public Serializer<?> getDefaultSerializer( final Class type ) {
+            //                if ( EnumSet.class.isAssignableFrom( type ) ) {
+            //                    return new EnumMapSerializer();
+            //                }
+            //                if ( EnumMap.class.isAssignableFrom( type ) ) {
+            //                    return new EnumMapSerializer();
+            //                }
+            //                return super.getDefaultSerializer( type );
+            //            }
+        }
+        _kryo.isRegistrationRequired = false
+        _kryo.register(listOf("").javaClass, DefaultSerializers.CollectionsSingletonListSerializer())
+        _kryo.register(Pattern::class.java, RegexSerializer())
+        _kryo.register(EnumMap::class.java, EnumMapSerializer())
+        _kryo.register(UUID::class.java, DefaultSerializers.UUIDSerializer())
 
-
-        _kryo.setRegistrationRequired(false);
-
-        SerializationDefaults.INSTANCE.register(_kryo);
+        UnmodifiableCollectionsSerializer.registerSerializers(_kryo)
+        SynchronizedCollectionsSerializer.registerSerializers(_kryo)
     }
 
     @Test
-    public void testSingletonList() throws Exception {
-        final List<?> obj = Collections.singletonList( "foo" );
-        final List<?> deserialized = deserialize( serialize( obj ), obj.getClass() );
-        assertDeepEquals( deserialized, obj );
+    @Throws(Exception::class)
+    fun testSingletonList() {
+        val obj: List<*> = listOf("foo")
+        val deserialized = deserialize(serialize(obj), obj.javaClass)
+        assertDeepEquals(deserialized, obj)
     }
 
     @Test
-    public void testCopySingletonList() throws Exception {
-        final List<?> obj = Collections.singletonList( "foo" );
-        final List<?> copy = _kryo.copy( obj );
-        assertDeepEquals( copy, obj );
+    @Throws(Exception::class)
+    fun testCopySingletonList() {
+        val obj: List<*> = listOf("foo")
+        val copy = _kryo.copy(obj)
+        assertDeepEquals(copy, obj)
     }
 
     @Test
-    public void testSingletonSet() throws Exception {
-        final Set<?> obj = Collections.singleton( "foo" );
-        final Set<?> deserialized = deserialize( serialize( obj ), obj.getClass() );
-        assertDeepEquals( deserialized, obj );
+    @Throws(Exception::class)
+    fun testSingletonSet() {
+        val obj: Set<*> = setOf("foo")
+        val deserialized = deserialize(serialize(obj), obj.javaClass)
+        assertDeepEquals(deserialized, obj)
     }
 
     @Test
-    public void testCopySingletonSet() throws Exception {
-        final Set<?> obj = Collections.singleton( "foo" );
-        final Set<?> copy = _kryo.copy( obj );
-        assertDeepEquals( copy, obj );
+    @Throws(Exception::class)
+    fun testCopySingletonSet() {
+        val obj: Set<*> = setOf("foo")
+        val copy = _kryo.copy(obj)
+        assertDeepEquals(copy, obj)
     }
 
     @Test
-    public void testSingletonMap() throws Exception {
-        final Map<?, ?> obj = Collections.singletonMap( "foo", "bar" );
-        final Map<?, ?> deserialized = deserialize( serialize( obj ), obj.getClass() );
-        assertDeepEquals( deserialized, obj );
+    @Throws(Exception::class)
+    fun testSingletonMap() {
+        val obj: Map<*, *> = Collections.singletonMap("foo", "bar")
+        val deserialized = deserialize(serialize(obj), obj.javaClass)
+        assertDeepEquals(deserialized, obj)
     }
 
     @Test
-    public void testCopySingletonMap() throws Exception {
-        final Map<?, ?> obj = Collections.singletonMap( "foo", "bar" );
-        final Map<?, ?> copy = _kryo.copy( obj );
-        assertDeepEquals( copy, obj );
-    }
-    
-    @Test
-    public void testEnumSet() throws Exception {
-        final EnumSet<?> set = EnumSet.allOf( Gender.class );
-        final EnumSet<?> deserialized = deserialize( serialize( set ), set.getClass() );
-        assertDeepEquals( deserialized, set );
+    @Throws(Exception::class)
+    fun testCopySingletonMap() {
+        val obj: Map<*, *> = Collections.singletonMap("foo", "bar")
+        val copy = _kryo.copy(obj)
+        assertDeepEquals(copy, obj)
     }
 
     @Test
-    public void testEmptyEnumSet() throws Exception {
-        final EnumSet<?> set = EnumSet.allOf( Gender.class );
-        final EnumSet<?> deserialized = deserialize( serialize( set ), set.getClass() );
-        assertDeepEquals( deserialized, set );
+    @Throws(Exception::class)
+    fun testEnumSet() {
+        val set: EnumSet<*> = EnumSet.allOf(Gender::class.java)
+        val deserialized = deserialize(serialize(set), set.javaClass)
+        assertDeepEquals(deserialized, set)
     }
-    
+
     @Test
-    public void testCopyEnumSet() throws Exception {
-        final EnumSet<?> set = EnumSet.allOf( Gender.class );
-        final EnumSet<?> copy = _kryo.copy(set);
-        assertDeepEquals( copy, set );
+    @Throws(Exception::class)
+    fun testEmptyEnumSet() {
+        val set: EnumSet<*> = EnumSet.allOf(Gender::class.java)
+        val deserialized = deserialize(serialize(set), set.javaClass)
+        assertDeepEquals(deserialized, set)
     }
-    
+
     @Test
-    public void testEnumMap() throws Exception {
-        final EnumMap<Gender, String> map = new EnumMap<>(Gender.class);
-        final String value = "foo";
-        map.put( Gender.FEMALE, value );
+    @Throws(Exception::class)
+    fun testCopyEnumSet() {
+        val set: EnumSet<*> = EnumSet.allOf(Gender::class.java)
+        val copy = _kryo.copy(set)
+        assertDeepEquals(copy, set)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testEnumMap() {
+        val map = EnumMap<Gender, String>(Gender::class.java)
+        val value = "foo"
+        map[Gender.FEMALE] = value
         // Another entry with the same value - to check reference handling
-        map.put( Gender.MALE, value );
-        @SuppressWarnings( "unchecked" )
-        final EnumMap<Gender, String> deserialized = deserialize( serialize( map ), map.getClass() );
-        assertDeepEquals( deserialized, map );
+        map[Gender.MALE] = value
+        val deserialized = deserialize(serialize(map), map.javaClass)
+        assertDeepEquals(deserialized, map)
     }
 
-    @Test(expected = KryoException.class)
-    public void testEmptyEnumMap() throws Exception {
-        final EnumMap<Gender, String> map = new EnumMap<>(Gender.class);
-        @SuppressWarnings( "unchecked" )
-        final EnumMap<Gender, String> deserialized = deserialize( serialize( map ), map.getClass() );
-        assertDeepEquals( deserialized, map );
+    @Test(expected = KryoException::class)
+    @Throws(Exception::class)
+    fun testEmptyEnumMap() {
+        val map = EnumMap<Gender, String>(Gender::class.java)
+        val deserialized = deserialize(serialize(map), map.javaClass)
+        assertDeepEquals(deserialized, map)
     }
-    
+
     @Test
-    public void testCopyEnumMap() throws Exception {
-        final EnumMap<Gender, String> map = new EnumMap<>(Gender.class);
-        final String value = "foo";
-        map.put( Gender.FEMALE, value );
-        final EnumMap<Gender,String> copy = _kryo.copy(map);
-        assertDeepEquals( copy, map );
+    @Throws(Exception::class)
+    fun testCopyEnumMap() {
+        val map = EnumMap<Gender, String>(Gender::class.java)
+        val value = "foo"
+        map[Gender.FEMALE] = value
+        val copy = _kryo.copy(map)
+        assertDeepEquals(copy, map)
     }
 
     /**
      * test that insertion order is retained.
      */
     @Test
-    public void testCopyForIterateMapSerializer() throws Exception {
-        final Map<Double, String> map = new LinkedHashMap<>();
+    @Throws(Exception::class)
+    fun testCopyForIterateMapSerializer() {
+        val map: MutableMap<Double, String> = LinkedHashMap()
         // use doubles as e.g. integers hash to the value...
-        for( int i = 0; i < 10; i++ ) {
-            map.put(Double.valueOf(i + "." + Math.abs(i ) ), "value: " + i );
+        for (i in 0..9) {
+            map[java.lang.Double.valueOf(i.toString() + "." + Math.abs(i))] = "value: $i"
         }
-        @SuppressWarnings( "unchecked" )
-        final Map<Double, String> deserialized = deserialize( serialize( map ), map.getClass() );
-        assertDeepEquals( deserialized, map );
+        val deserialized: Map<Double, String> = deserialize(serialize(map), map.javaClass)
+        assertDeepEquals(deserialized, map)
     }
 
     @Test
-    public void testGregorianCalendar() throws Exception {
-        final Holder<Calendar> cal = new Holder<>(Calendar.getInstance(Locale.ENGLISH));
-        @SuppressWarnings( "unchecked" )
-        final Holder<Calendar> deserialized = deserialize( serialize( cal ), Holder.class );
-        assertDeepEquals( deserialized, cal );
-        
-        assertEquals( deserialized.item.getTimeInMillis(), cal.item.getTimeInMillis() );
-        assertEquals( deserialized.item.getTimeZone(), cal.item.getTimeZone() );
-        assertEquals( deserialized.item.getMinimalDaysInFirstWeek(), cal.item.getMinimalDaysInFirstWeek() );
-        assertEquals( deserialized.item.getFirstDayOfWeek(), cal.item.getFirstDayOfWeek() );
-        assertEquals( deserialized.item.isLenient(), cal.item.isLenient() );
+    @Throws(Exception::class)
+    fun testGregorianCalendar() {
+        val cal = TestClasses.Holder(Calendar.getInstance(Locale.ENGLISH))
+        val deserialized = deserialize(serialize(cal), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, cal)
+
+
+        val item = deserialized.item as Calendar
+        Assert.assertEquals(item.timeInMillis, cal.item.timeInMillis)
+        Assert.assertEquals(item.timeZone, cal.item.timeZone)
+        Assert.assertEquals(item.minimalDaysInFirstWeek.toLong(), cal.item.minimalDaysInFirstWeek.toLong())
+        Assert.assertEquals(item.firstDayOfWeek.toLong(), cal.item.firstDayOfWeek.toLong())
+        Assert.assertEquals(item.isLenient, cal.item.isLenient)
     }
 
     @Test
-    public void testCopyGregorianCalendar() throws Exception {
-        final Holder<Calendar> cal = new Holder<>(Calendar.getInstance(Locale.ENGLISH));
-        final Holder<Calendar> copy = _kryo.copy( cal );
-        assertDeepEquals( copy, cal );
-        
-        assertEquals( copy.item.getTimeInMillis(), cal.item.getTimeInMillis() );
-        assertEquals( copy.item.getTimeZone(), cal.item.getTimeZone() );
-        assertEquals( copy.item.getMinimalDaysInFirstWeek(), cal.item.getMinimalDaysInFirstWeek() );
-        assertEquals( copy.item.getFirstDayOfWeek(), cal.item.getFirstDayOfWeek() );
-        assertEquals( copy.item.isLenient(), cal.item.isLenient() );
+    @Throws(Exception::class)
+    fun testCopyGregorianCalendar() {
+        val cal = TestClasses.Holder(Calendar.getInstance(Locale.ENGLISH))
+        val copy = _kryo.copy(cal)
+        assertDeepEquals(copy, cal)
+        Assert.assertEquals(copy.item.timeInMillis, cal.item.timeInMillis)
+        Assert.assertEquals(copy.item.timeZone, cal.item.timeZone)
+        Assert.assertEquals(copy.item.minimalDaysInFirstWeek.toLong(), cal.item.minimalDaysInFirstWeek.toLong())
+        Assert.assertEquals(copy.item.firstDayOfWeek.toLong(), cal.item.firstDayOfWeek.toLong())
+        Assert.assertEquals(copy.item.isLenient, cal.item.isLenient)
     }
 
     @Test
-    public void testJavaUtilDate() throws Exception {
-        final Holder<Date> cal = new Holder<>(new Date(System.currentTimeMillis()));
-        @SuppressWarnings( "unchecked" )
-        final Holder<Date> deserialized = deserialize( serialize( cal ), Holder.class );
-        assertDeepEquals( deserialized, cal );
-        assertEquals(deserialized.item.getTime(), cal.item.getTime());
+    @Throws(Exception::class)
+    fun testJavaUtilDate() {
+        val cal = TestClasses.Holder(java.util.Date(System.currentTimeMillis()))
+        val deserialized = deserialize(serialize(cal), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, cal)
+        val item = deserialized.item as Date
+        Assert.assertEquals(item.time, cal.item.time)
     }
 
     @Test
-    public void testCopyJavaUtilDate() throws Exception {
-        final Holder<Date> cal = new Holder<>(new Date(System.currentTimeMillis()));
-        final Holder<Date> copy = _kryo.copy( cal );
-        assertDeepEquals( copy, cal );
-        assertEquals(copy.item.getTime(), cal.item.getTime());
+    @Throws(Exception::class)
+    fun testCopyJavaUtilDate() {
+        val cal = TestClasses.Holder(java.util.Date(System.currentTimeMillis()))
+        val copy = _kryo.copy(cal)
+        assertDeepEquals(copy, cal)
+        Assert.assertEquals(copy.item.time, cal.item.time)
     }
 
     @Test
-    public void testJavaSqlTimestamp() throws Exception {
-        final Holder<Timestamp> cal = new Holder<>(new Timestamp(System.currentTimeMillis()));
-        @SuppressWarnings( "unchecked" )
-        final Holder<Timestamp> deserialized = deserialize( serialize( cal ), Holder.class );
-        assertDeepEquals( deserialized, cal );
-        assertEquals( deserialized.item.getTime(), cal.item.getTime() );
+    @Throws(Exception::class)
+    fun testJavaSqlTimestamp() {
+        val cal = TestClasses.Holder(Timestamp(System.currentTimeMillis()))
+        val deserialized = deserialize(serialize(cal), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, cal)
+        val item = deserialized.item as Timestamp
+        Assert.assertEquals(item.time, cal.item.time)
     }
 
     @Test
-    public void testCopyJavaSqlTimestamp() throws Exception {
-        final Holder<Timestamp> cal = new Holder<>(new Timestamp(System.currentTimeMillis()));
-        final Holder<Timestamp> copy = _kryo.copy( cal );
-        assertDeepEquals( copy, cal );
-        assertEquals( copy.item.getTime(), cal.item.getTime() );
+    @Throws(Exception::class)
+    fun testCopyJavaSqlTimestamp() {
+        val cal = TestClasses.Holder(Timestamp(System.currentTimeMillis()))
+        val copy = _kryo.copy(cal)
+        assertDeepEquals(copy, cal)
+        Assert.assertEquals(copy.item.time, cal.item.time)
     }
 
     @Test
-    public void testJavaSqlDate() throws Exception {
-        final Holder<java.sql.Date> date = new Holder<>(new java.sql.Date(System.currentTimeMillis()));
-        @SuppressWarnings("unchecked")
-        final Holder<java.sql.Date> deserialized = deserialize(serialize(date), Holder.class);
-        assertDeepEquals(deserialized, date);
-        assertEquals(deserialized.item.getTime(), date.item.getTime());
+    @Throws(Exception::class)
+    fun testJavaSqlDate() {
+        val date = TestClasses.Holder(Date(System.currentTimeMillis()))
+        val deserialized = deserialize(serialize(date), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, date)
+        val item = deserialized.item as Date
+        Assert.assertEquals(item.time, date.item.time)
     }
 
     @Test
-    public void testCopyJavaSqlDate() throws Exception {
-        final Holder<java.sql.Date> date = new Holder<>(new java.sql.Date(System.currentTimeMillis()));
-        final Holder<java.sql.Date> copy = _kryo.copy(date);
-        assertDeepEquals(copy, date);
-        assertEquals(copy.item.getTime(), date.item.getTime());
+    @Throws(Exception::class)
+    fun testCopyJavaSqlDate() {
+        val date = TestClasses.Holder(Date(System.currentTimeMillis()))
+        val copy = _kryo.copy(date)
+        assertDeepEquals(copy, date)
+        Assert.assertEquals(copy.item.time, date.item.time)
     }
 
     @Test
-    public void testJavaSqlTime() throws Exception {
-        final Holder<java.sql.Time> time = new Holder<>(new java.sql.Time(System.currentTimeMillis()));
-        @SuppressWarnings("unchecked")
-        final Holder<java.sql.Time> deserialized = deserialize(serialize(time), Holder.class);
-        assertDeepEquals(deserialized, time);
-        assertEquals(deserialized.item.getTime(), time.item.getTime());
+    @Throws(Exception::class)
+    fun testJavaSqlTime() {
+        val time = TestClasses.Holder(Time(System.currentTimeMillis()))
+        val deserialized = deserialize(serialize(time), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, time)
+        val item = deserialized.item as Time
+        Assert.assertEquals(item.time, time.item.time)
     }
 
     @Test
-    public void testCopyJavaSqlTime() throws Exception {
-        final Holder<java.sql.Time> time = new Holder<>(new java.sql.Time(System.currentTimeMillis()));
-        final Holder<java.sql.Time> copy = _kryo.copy(time);
-        assertDeepEquals(copy, time);
-        assertEquals(copy.item.getTime(), time.item.getTime());
+    @Throws(Exception::class)
+    fun testCopyJavaSqlTime() {
+        val time = TestClasses.Holder(Time(System.currentTimeMillis()))
+        val copy = _kryo.copy(time)
+        assertDeepEquals(copy, time)
+        Assert.assertEquals(copy.item.time, time.item.time)
     }
 
     @Test
-    public void testBitSet() throws Exception {
-        final BitSet bitSet = new BitSet(10);
-        bitSet.flip(2);
-        bitSet.flip(4);
-        final Holder<BitSet> holder = new Holder<>(bitSet);
-        @SuppressWarnings("unchecked")
-        final Holder<BitSet> deserialized = deserialize(serialize(holder), Holder.class);
-        assertDeepEquals(deserialized, holder);
+    @Throws(Exception::class)
+    fun testBitSet() {
+        val bitSet = BitSet(10)
+        bitSet.flip(2)
+        bitSet.flip(4)
+        val holder = TestClasses.Holder(bitSet)
+        val deserialized = deserialize(serialize(holder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, holder)
     }
 
     @Test
-    public void testCopyBitSet() throws Exception {
-        final BitSet bitSet = new BitSet(10);
-        bitSet.flip(2);
-        bitSet.flip(4);
-        final BitSet copy = _kryo.copy(bitSet);
-        assertDeepEquals(copy, bitSet);
+    @Throws(Exception::class)
+    fun testCopyBitSet() {
+        val bitSet = BitSet(10)
+        bitSet.flip(2)
+        bitSet.flip(4)
+        val copy = _kryo.copy(bitSet)
+        assertDeepEquals(copy, bitSet)
     }
 
     @Test
-    public void testURI() throws Exception {
-        final Holder<URI> uri = new Holder<>(new URI("http://www.google.com"));
-        @SuppressWarnings( "unchecked" )
-        final Holder<URI> deserialized = deserialize( serialize( uri ), Holder.class );
-        assertDeepEquals(deserialized, uri);
+    @Throws(Exception::class)
+    fun testURI() {
+        val uri = TestClasses.Holder(URI("http://www.google.com"))
+        val deserialized = deserialize(serialize(uri), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, uri)
     }
 
     @Test
-    public void testCopyURI() throws Exception {
-        final Holder<URI> uri = new Holder<>(new URI("http://www.google.com"));
-        final Holder<URI> copy = _kryo.copy( uri );
-        assertDeepEquals(copy, uri);
+    @Throws(Exception::class)
+    fun testCopyURI() {
+        val uri = TestClasses.Holder(URI("http://www.google.com"))
+        val copy = _kryo.copy(uri)
+        assertDeepEquals(copy, uri)
     }
 
     @Test
-    public void testUUID() throws Exception {
-        final Holder<UUID> uuid = new Holder<>(UUID.randomUUID());
-        @SuppressWarnings( "unchecked" )
-        final Holder<UUID> deserialized = deserialize( serialize( uuid ), Holder.class );
-        assertDeepEquals( deserialized, uuid );
+    @Throws(Exception::class)
+    fun testUUID() {
+        val uuid = TestClasses.Holder(UUID.randomUUID())
+        val deserialized = deserialize(serialize(uuid), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, uuid)
     }
 
     @Test
-    public void testCopyUUID() throws Exception {
-        final Holder<UUID> uuid = new Holder<>(UUID.randomUUID());
-        final Holder<UUID> copy = _kryo.copy( uuid );
-        assertDeepEquals( copy, uuid );
+    @Throws(Exception::class)
+    fun testCopyUUID() {
+        val uuid = TestClasses.Holder(UUID.randomUUID())
+        val copy = _kryo.copy(uuid)
+        assertDeepEquals(copy, uuid)
     }
 
     @Test
-    public void testRegex() throws Exception {
-        final Holder<Pattern> pattern = new Holder<>(Pattern.compile("regex"));
-        @SuppressWarnings( "unchecked" )
-        final Holder<Pattern> deserialized = deserialize( serialize( pattern ), Holder.class );
-        assertDeepEquals( deserialized, pattern );
-
-        final Holder<Pattern> patternWithFlags = new Holder<>(Pattern.compile("\n", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE));
-        @SuppressWarnings( "unchecked" )
-        final Holder<Pattern> deserializedWithFlags = deserialize( serialize( patternWithFlags ), Holder.class );
-        assertDeepEquals( deserializedWithFlags, patternWithFlags );
-	}
-
-    @Test
-    public void testCopyRegex() throws Exception {
-        final Holder<Pattern> pattern = new Holder<>(Pattern.compile("regex"));
-        final Holder<Pattern> copy = _kryo.copy( pattern );
-        assertDeepEquals( copy, pattern );
-
-		final Holder<Pattern> patternWithFlags = new Holder<>(Pattern.compile("\n", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE));
-        final Holder<Pattern> copyWithFlags = _kryo.copy( patternWithFlags );
-        assertDeepEquals( copyWithFlags, patternWithFlags );
+    @Throws(Exception::class)
+    fun testRegex() {
+        val pattern = TestClasses.Holder(Pattern.compile("regex"))
+        val deserialized = deserialize(serialize(pattern), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, pattern)
+        val patternWithFlags = TestClasses.Holder(Pattern.compile("\n", Pattern.MULTILINE or Pattern.CASE_INSENSITIVE))
+        val deserializedWithFlags = deserialize(serialize(patternWithFlags), TestClasses.Holder::class.java)
+        assertDeepEquals(deserializedWithFlags, patternWithFlags)
     }
 
     @Test
-    public void testStringBuffer() throws Exception {
-        final StringBuffer stringBuffer = new StringBuffer( "<stringbuffer>with some content \n& some lines...</stringbuffer>" );
-        final StringBuffer deserialized = deserialize( serialize( stringBuffer ), StringBuffer.class );
-        assertDeepEquals( deserialized, stringBuffer );
+    @Throws(Exception::class)
+    fun testCopyRegex() {
+        val pattern = TestClasses.Holder(Pattern.compile("regex"))
+        val copy = _kryo.copy(pattern)
+        assertDeepEquals(copy, pattern)
+        val patternWithFlags = TestClasses.Holder(Pattern.compile("\n", Pattern.MULTILINE or Pattern.CASE_INSENSITIVE))
+        val copyWithFlags = _kryo.copy(patternWithFlags)
+        assertDeepEquals(copyWithFlags, patternWithFlags)
     }
 
     @Test
-    public void testStringBuilder() throws Exception {
-        final StringBuilder stringBuilder = new StringBuilder( "<stringbuilder>with some content \n& some lines...</stringbuilder>" );
-        final StringBuilder deserialized = deserialize( serialize( stringBuilder ), StringBuilder.class );
-        assertDeepEquals( deserialized, stringBuilder );
+    @Throws(Exception::class)
+    fun testStringBuffer() {
+        val stringBuffer = StringBuffer("<stringbuffer>with some content \n& some lines...</stringbuffer>")
+        val deserialized = deserialize(serialize(stringBuffer), StringBuffer::class.java)
+        assertDeepEquals(deserialized, stringBuffer)
     }
-    
+
     @Test
-    public void testMapWithIntConstructorOnly() throws Exception {
-        final HashMapWithIntConstructorOnly map = new HashMapWithIntConstructorOnly(5 );
-        final HashMapWithIntConstructorOnly deserialized = deserialize( serialize( map ), HashMapWithIntConstructorOnly.class );
-        assertDeepEquals( deserialized, map );
+    @Throws(Exception::class)
+    fun testStringBuilder() {
+        val stringBuilder = StringBuilder("<stringbuilder>with some content \n& some lines...</stringbuilder>")
+        val deserialized = deserialize(serialize(stringBuilder), StringBuilder::class.java)
+        assertDeepEquals(deserialized, stringBuilder)
     }
-    
+
     @Test
-    public void testCurrency() throws Exception {
-        final Currency currency = Currency.getInstance( "EUR" );
-        final Currency deserialized = deserialize( serialize( currency ), Currency.class );
-        assertDeepEquals( deserialized, currency );
+    @Throws(Exception::class)
+    fun testMapWithIntConstructorOnly() {
+        val map = HashMapWithIntConstructorOnly(5)
+        val deserialized = deserialize(serialize(map), HashMapWithIntConstructorOnly::class.java)
+        assertDeepEquals(deserialized, map)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testCurrency() {
+        val currency = Currency.getInstance("EUR")
+        val deserialized = deserialize(serialize(currency), Currency::class.java)
+        assertDeepEquals(deserialized, currency)
 
         // Check that the transient field defaultFractionDigits is initialized correctly
-        Assert.assertEquals( deserialized.getCurrencyCode(), currency.getCurrencyCode() );
-        Assert.assertEquals( deserialized.getDefaultFractionDigits(), currency.getDefaultFractionDigits() );
+        Assert.assertEquals(deserialized.currencyCode, currency.currencyCode)
+        Assert.assertEquals(deserialized.defaultFractionDigits.toLong(), currency.defaultFractionDigits.toLong())
     }
-    
-    public Object[][] unmodifiableCollections() {
-        final HashMap<String, String> m = new HashMap<>();
-        m.put( "foo", "bar" );
-        return new Object[][] {
-            { Collections.unmodifiableList(new ArrayList<>(Arrays.asList("foo", "bar")) ) },
-            { Collections.unmodifiableSet(new HashSet<>(Arrays.asList("foo", "bar")) ) },
-            { Collections.unmodifiableMap( m ) },
-        };
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testUnmodifiableCollections() throws Exception {
-        final Object collection = unmodifiableCollections();
 
-        final Holder<Object> holder = new Holder<>(collection);
-        final Holder<Object> deserialized = deserialize( serialize( holder ), Holder.class );
-        assertDeepEquals( deserialized, holder );
-    }
-    
-    @Test
-    public void testCopyUnmodifiableCollections() throws Exception {
-        final Object collection = unmodifiableCollections();
-
-        final Holder<Object> unmodifiableCollection = new Holder<>(collection);
-        final Holder<Object> copy = _kryo.copy( unmodifiableCollection );
-        assertDeepEquals( copy, unmodifiableCollection );
-    }
-    
-    public Object[][] synchronizedCollections() {
-        final HashMap<String, String> m = new HashMap<>();
-        m.put( "foo", "bar" );
-        return new Object[][] {
-            { Collections.synchronizedList(new ArrayList<>(Arrays.asList("foo", "bar")) ) },
-            { Collections.synchronizedSet(new HashSet<>(Arrays.asList("foo", "bar")) ) },
-            { Collections.synchronizedMap( m ) },
-        };
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testSynchronizedCollections(  ) throws Exception {
-        final Object collection = synchronizedCollections();
-        final Holder<Object> holder = new Holder<>(collection);
-        final Holder<Object> deserialized = deserialize( serialize( holder ), Holder.class );
-        assertDeepEquals( deserialized, holder );
-    }
-    
-    @Test
-    public void testCopySynchronizedCollections() throws Exception {
-        final Object collection = synchronizedCollections();
-        final Holder<Object> synchronizedCollection = new Holder<>(collection);
-        final Holder<Object> copy = _kryo.copy( synchronizedCollection );
-        assertDeepEquals( copy, synchronizedCollection );
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testJavaUtilCollectionsEmptyList() throws Exception {
-        final Holder<List<String>> emptyList = new Holder<>(Collections.emptyList());
-        final Holder<List<String>> deserialized = deserialize( serialize( emptyList ), Holder.class );
-        assertDeepEquals( deserialized, emptyList );
-    }
-    
-    @Test
-    public void testCopyJavaUtilCollectionsEmptyList() throws Exception {
-        final Holder<List<String>> emptyList = new Holder<>(Collections.emptyList());
-        final Holder<List<String>> copy = _kryo.copy( emptyList );
-        assertDeepEquals( copy, emptyList );
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testJavaUtilCollectionsEmptySet() throws Exception {
-        final Holder<Set<String>> emptyList = new Holder<>(Collections.emptySet());
-        final Holder<Set<String>> deserialized = deserialize( serialize( emptyList ), Holder.class );
-        assertDeepEquals( deserialized, emptyList );
+    fun unmodifiableCollections(): Array<Array<Any>> {
+        val m = HashMap<String, String>()
+        m["foo"] = "bar"
+        return arrayOf(
+            arrayOf(Collections.unmodifiableList(ArrayList(mutableListOf("foo", "bar")))), arrayOf(
+                Collections.unmodifiableSet(
+                    HashSet(
+                        mutableListOf("foo", "bar")
+                    )
+                )
+            ), arrayOf(Collections.unmodifiableMap(m))
+        )
     }
 
     @Test
-    public void testCopyJavaUtilCollectionsEmptySet() throws Exception {
-        final Holder<Set<String>> emptyList = new Holder<>(Collections.emptySet());
-        final Holder<Set<String>> copy = _kryo.copy( emptyList );
-        assertDeepEquals( copy, emptyList );
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testJavaUtilCollectionsEmptyMap() throws Exception {
-        final Holder<Map<String, String>> emptyMap = new Holder<>(Collections.emptyMap());
-        final Holder<Map<String, String>> deserialized = deserialize( serialize( emptyMap ), Holder.class );
-        assertDeepEquals( deserialized, emptyMap );
+    @Throws(Exception::class)
+    fun testUnmodifiableCollections() {
+        val collection: Any = unmodifiableCollections()
+        val holder = TestClasses.Holder(collection)
+        val deserialized = deserialize(serialize(holder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, holder)
     }
 
     @Test
-    public void testCopyJavaUtilCollectionsEmptyMap() throws Exception {
-        final Holder<Map<String, String>> emptyMap = new Holder<>(Collections.emptyMap());
-        final Holder<Map<String, String>> copy = _kryo.copy( emptyMap );
-        assertDeepEquals( copy, emptyMap );
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testJavaUtilArraysAsListEmpty() throws Exception {
-        final Holder<List<String>> asListHolder = new Holder<>(Arrays.asList());
-        final Holder<List<String>> deserialized = deserialize( serialize( asListHolder ), Holder.class );
-        assertDeepEquals( deserialized, asListHolder );
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testJavaUtilArraysAsListPrimitiveArrayElement() throws Exception {
-        final int[] values = { 1, 2 };
-        @SuppressWarnings("rawtypes")
-        final Holder<List<String>> asListHolder = new Holder( Arrays.asList( values ) );
-        final Holder<List<String>> deserialized = deserialize( serialize( asListHolder ), Holder.class );
-        assertDeepEquals( deserialized, asListHolder );
+    @Throws(Exception::class)
+    fun testCopyUnmodifiableCollections() {
+        val collection: Any = unmodifiableCollections()
+        val unmodifiableCollection = TestClasses.Holder(collection)
+        val copy = _kryo.copy(unmodifiableCollection)
+        assertDeepEquals(copy, unmodifiableCollection)
     }
 
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testJavaUtilArraysAsListBoxedPrimitives() throws Exception {
-        final Integer[] values = { 1, 2 };
-        final List<Integer> list = Arrays.asList(values);
-        final Holder<List<Integer>> asListHolder = new Holder(list);
-        final Holder<List<Integer>> deserialized = deserialize( serialize( asListHolder ), Holder.class );
-        assertDeepEquals( deserialized, asListHolder );
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testJavaUtilArraysAsListString() throws Exception {
-        final Holder<List<String>> asListHolder = new Holder<>(Arrays.asList("foo", "bar"));
-        final Holder<List<String>> deserialized = deserialize( serialize( asListHolder ), Holder.class );
-        assertDeepEquals( deserialized, asListHolder );
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void testJavaUtilArraysAsListEmail() throws Exception {
-        final Holder<List<Email>> asListHolder = new Holder<>(Arrays.asList(new Email("foo", "foo@example.org")));
-        final Holder<List<Email>> deserialized = deserialize( serialize( asListHolder ), Holder.class );
-        assertDeepEquals( deserialized, asListHolder );
-    }
-    
-    @Test
-    public void testCopyJavaUtilArraysAsList() throws Exception {
-        final List<String> list = Arrays.asList("foo", "bar");
-        final List<String> copy = _kryo.copy(list);
-        assertDeepEquals( copy, list );
+    fun synchronizedCollections(): Array<Array<Any>> {
+        val m = HashMap<String, String>()
+        m["foo"] = "bar"
+        return arrayOf(
+            arrayOf(Collections.synchronizedList(ArrayList(mutableListOf("foo", "bar")))), arrayOf(
+                Collections.synchronizedSet(
+                    HashSet(
+                        mutableListOf("foo", "bar")
+                    )
+                )
+            ), arrayOf(Collections.synchronizedMap(m))
+        )
     }
 
     @Test
-    public void testClassSerializer() throws Exception {
-        final Holder<Class<?>> clazz = new Holder<>(String.class);
-        @SuppressWarnings( "unchecked" )
-        final Holder<Class<?>> deserialized = deserialize( serialize( clazz ), Holder.class );
-        assertDeepEquals( deserialized, clazz );
+    @Throws(Exception::class)
+    fun testSynchronizedCollections() {
+        val collection: Any = synchronizedCollections()
+        val holder = TestClasses.Holder(collection)
+        val deserialized = deserialize(serialize(holder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, holder)
     }
 
-    @Test(expected = KryoException.class)
-    public void testInnerClass() throws Exception {
+    @Test
+    @Throws(Exception::class)
+    fun testCopySynchronizedCollections() {
+        val collection: Any = synchronizedCollections()
+        val synchronizedCollection = TestClasses.Holder(collection)
+        val copy = _kryo.copy(synchronizedCollection)
+        assertDeepEquals(copy, synchronizedCollection)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testJavaUtilCollectionsEmptyList() {
+        val emptyList = TestClasses.Holder(emptyList<String>())
+        val deserialized = deserialize(serialize(emptyList), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, emptyList)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testCopyJavaUtilCollectionsEmptyList() {
+        val emptyList = TestClasses.Holder(emptyList<String>())
+        val copy = _kryo.copy(emptyList)
+        assertDeepEquals(copy, emptyList)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testJavaUtilCollectionsEmptySet() {
+        val emptyList = TestClasses.Holder(emptySet<String>())
+        val deserialized = deserialize(serialize(emptyList), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, emptyList)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testCopyJavaUtilCollectionsEmptySet() {
+        val emptyList = TestClasses.Holder(emptySet<String>())
+        val copy = _kryo.copy(emptyList)
+        assertDeepEquals(copy, emptyList)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testJavaUtilCollectionsEmptyMap() {
+        val emptyMap = TestClasses.Holder(emptyMap<String, String>())
+        val deserialized = deserialize(serialize(emptyMap), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, emptyMap)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testCopyJavaUtilCollectionsEmptyMap() {
+        val emptyMap = TestClasses.Holder(emptyMap<String, String>())
+        val copy = _kryo.copy(emptyMap)
+        assertDeepEquals(copy, emptyMap)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testJavaUtilArraysAsListEmpty() {
+        val asListHolder = TestClasses.Holder<List<String>>(mutableListOf())
+        val deserialized = deserialize(serialize(asListHolder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, asListHolder)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testJavaUtilArraysAsListPrimitiveArrayElement() {
+        val values = intArrayOf(1, 2).toList()
+        val asListHolder = TestClasses.Holder<List<Int>>(values)
+        val deserialized = deserialize(serialize(asListHolder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, asListHolder)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testJavaUtilArraysAsListBoxedPrimitives() {
+        val values = arrayOf(1, 2)
+        val list = Arrays.asList(*values)
+        val asListHolder = TestClasses.Holder<List<Int>>(list)
+        val deserialized = deserialize(serialize(asListHolder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, asListHolder)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testJavaUtilArraysAsListString() {
+        val asListHolder = TestClasses.Holder<List<String>>(mutableListOf("foo", "bar"))
+        val deserialized = deserialize(serialize(asListHolder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, asListHolder)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testJavaUtilArraysAsListEmail() {
+        val asListHolder = TestClasses.Holder(Arrays.asList(Email("foo", "foo@example.org")))
+        val deserialized = deserialize(serialize(asListHolder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, asListHolder)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testCopyJavaUtilArraysAsList() {
+        val list: List<String> = mutableListOf("foo", "bar")
+        val copy = _kryo.copy(list)
+        assertDeepEquals(copy, list)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testClassSerializer() {
+        val clazz = TestClasses.Holder<Class<*>>(String::class.java)
+        val deserialized = deserialize(serialize(clazz), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, clazz)
+    }
+
+    @Test(expected = KryoException::class)
+    @Throws(Exception::class)
+    fun testInnerClass() {
         // seems to be related to #15
-        final Container container = TestClasses.createContainer();
-        final Container deserialized = deserialize( serialize( container ), Container.class );
-        assertDeepEquals( deserialized, container );
+        val container = TestClasses.createContainer()
+        val deserialized = deserialize(serialize(container), TestClasses.Container::class.java)
+        assertDeepEquals(deserialized, container)
     }
 
     @Test
-    public <T> void testSharedObjectIdentity_CounterHolder() throws Exception {
-        final AtomicInteger sharedObject = new AtomicInteger( 42 );
-        final CounterHolder holder1 = new CounterHolder(sharedObject );
-        final CounterHolder holder2 = new CounterHolder( sharedObject );
-        final CounterHolderArray holderHolder = new CounterHolderArray(holder1, holder2 );
-
-        _kryo.setReferences(true);
-        final CounterHolderArray deserialized = deserialize( serialize( holderHolder ), CounterHolderArray.class );
-        assertDeepEquals( deserialized, holderHolder );
-        assertTrue( deserialized.holders[0].item == deserialized.holders[1].item );
+    @Throws(Exception::class)
+    fun <T> testSharedObjectIdentity_CounterHolder() {
+        val sharedObject = AtomicInteger(42)
+        val holder1 = CounterHolder(sharedObject)
+        val holder2 = CounterHolder(sharedObject)
+        val holderHolder = CounterHolderArray(holder1, holder2)
+        _kryo.setReferences(true)
+        val deserialized = deserialize(serialize(holderHolder), CounterHolderArray::class.java)
+        assertDeepEquals(deserialized, holderHolder)
+        Assert.assertTrue(deserialized.holders[0].item === deserialized.holders[1].item)
     }
 
-    protected Object[][] createSharedObjectIdentityProviderData() {
-        return new Object[][] {
-                { AtomicInteger.class.getSimpleName(), new AtomicInteger( 42 ) },
-                { Email.class.getSimpleName(), new Email( "foo bar", "foo.bar@example.com" ) } };
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public <T> void testSharedObjectIdentityWithArray() throws Exception {
-        Object[][] data = createSharedObjectIdentityProviderData();
-        for (final Object[] datum : data) {
-            String name = (String)datum[0];
-            T sharedObject = (T)datum[1];
-
-            final Holder<T> holder1 = new Holder<>(sharedObject);
-            final Holder<T> holder2 = new Holder<>(sharedObject);
-            final HolderArray<T> holderHolder = new HolderArray<>(holder1, holder2);
-
-            _kryo.setReferences(true);
-
-            final HolderArray<T> deserialized = deserialize( serialize( holderHolder ), HolderArray.class );
-            assertDeepEquals( deserialized, holderHolder );
-            assertTrue( deserialized.holders[0].item == deserialized.holders[1].item );
-        }
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public <T> void testSharedObjectIdentity() throws Exception {
-        Object[][] data = createSharedObjectIdentityProviderData();
-        for (final Object[] datum : data) {
-            String name = (String) datum[0];
-            T sharedObject = (T) datum[1];
-
-            final Holder<T> holder1 = new Holder<>(sharedObject);
-            final Holder<T> holder2 = new Holder<>(sharedObject);
-            final HolderList<T> holderHolder = new HolderList<>(new ArrayList<>(Arrays.asList(holder1, holder2)));
-
-            _kryo.setReferences(true);
-
-            final HolderList<T> deserialized = deserialize( serialize( holderHolder ), HolderList.class );
-            assertDeepEquals( deserialized, holderHolder );
-            assertTrue( deserialized.holders.get( 0 ).item == deserialized.holders.get( 1 ).item );
-        }
-    }
-
-    protected Object[][] createTypesAsSessionAttributesData() {
-        return new Object[][] {
-                { Boolean.class, Boolean.TRUE },
-                { String.class, "42" },
-                { StringBuilder.class, new StringBuilder( "42" ) },
-                { StringBuffer.class, new StringBuffer( "42" ) },
-                { Class.class, String.class },
-                { Long.class, new Long( 42 ) },
-                { Integer.class, new Integer( 42 ) },
-                { Character.class, new Character( 'c' ) },
-                { Byte.class, new Byte( "b".getBytes()[0] ) },
-                { Double.class, new Double( 42d ) },
-                { Float.class, new Float( 42f ) },
-                { Short.class, new Short( (short) 42 ) },
-                { BigDecimal.class, new BigDecimal( 42 ) },
-                { AtomicInteger.class, new AtomicInteger( 42 ) },
-                { AtomicLong.class, new AtomicLong( 42 ) },
-                { Integer[].class, new Integer[] { 42 } },
-                { Date.class, new Date( System.currentTimeMillis() - 10000 ) },
-                { Calendar.class, Calendar.getInstance() },
-                { Currency.class, Currency.getInstance( "EUR" ) },
-                { ArrayList.class, new ArrayList<>(Arrays.asList("foo")) },
-                { int[].class, new int[] { 1, 2 } },
-                { long[].class, new long[] { 1, 2 } },
-                { short[].class, new short[] { 1, 2 } },
-                { float[].class, new float[] { 1, 2 } },
-                { double[].class, new double[] { 1, 2 } },
-                { int[].class, new int[] { 1, 2 } },
-                { byte[].class, "42".getBytes() },
-                { char[].class, "42".toCharArray() },
-                { String[].class, new String[] { "23", "42" } },
-                {Person[].class, new Person[] {createPerson("foo bar", Gender.MALE, 42 ) } } };
+    protected fun createSharedObjectIdentityProviderData(): Array<Array<Any>> {
+        return arrayOf(
+            arrayOf(AtomicInteger::class.java.simpleName, AtomicInteger(42)), arrayOf(
+                Email::class.java.simpleName, Email("foo bar", "foo.bar@example.com")
+            )
+        )
     }
 
     @Test
-    public <T> void testTypesAsSessionAttributes() throws Exception {
-        Object[][] data = createTypesAsSessionAttributesData();
-        for (final Object[] datum : data) {
-            final Class<T> type = (Class<T>) datum[0];
-            final T instance = (T) datum[1];
-
-            @SuppressWarnings( "unchecked" )
-            final T deserialized = (T) deserialize( serialize( instance ), instance.getClass() );
-            assertDeepEquals( deserialized, instance );
+    @Throws(Exception::class)
+    fun <T> testSharedObjectIdentityWithArray() {
+        val data = createSharedObjectIdentityProviderData()
+        for (datum in data) {
+            val name = datum[0] as String
+            val sharedObject = datum[1] as T
+            val holder1 = TestClasses.Holder(sharedObject)
+            val holder2 = TestClasses.Holder(sharedObject)
+            val holderHolder = HolderArray(holder1, holder2)
+            _kryo.setReferences(true)
+            val deserialized = deserialize(serialize(holderHolder), HolderArray::class.java)
+            assertDeepEquals(deserialized, holderHolder)
+            Assert.assertTrue(deserialized.holders[0].item === deserialized.holders[1].item)
         }
     }
 
     @Test
-    public void testTypesInContainerClass() throws Exception {
-        final MyContainer myContainer = new MyContainer();
-        final MyContainer deserialized = deserialize( serialize( myContainer ), MyContainer.class );
-        assertDeepEquals( deserialized, myContainer );
+    @Throws(Exception::class)
+    fun <T> testSharedObjectIdentity() {
+        val data = createSharedObjectIdentityProviderData()
+        for (datum in data) {
+            val name = datum[0] as String
+            val sharedObject = datum[1] as T
+            val holder1 = TestClasses.Holder(sharedObject)
+            val holder2 = TestClasses.Holder(sharedObject)
+
+            val holders = ArrayList(listOf(holder1, holder2))
+            val holderHolder = HolderList(holders)
+            _kryo.setReferences(true)
+            val deserialized = deserialize(serialize(holderHolder), HolderList::class.java)
+            assertDeepEquals(deserialized, holderHolder)
+            Assert.assertTrue(deserialized.holders[0].item === deserialized.holders[1].item)
+        }
     }
 
-    @Test(expected = KryoException.class)
-    public void testClassWithoutDefaultConstructor() throws Exception {
-        final ClassWithoutDefaultConstructor obj = TestClasses.createClassWithoutDefaultConstructor("foo" );
-        final ClassWithoutDefaultConstructor deserialized = deserialize( serialize( obj ), ClassWithoutDefaultConstructor.class );
-        assertDeepEquals( deserialized, obj );
+    protected fun createTypesAsSessionAttributesData(): Array<Array<Any>> {
+        return arrayOf(
+            arrayOf(Boolean::class.java, java.lang.Boolean.TRUE), arrayOf(
+                String::class.java, "42"
+            ), arrayOf(StringBuilder::class.java, StringBuilder("42")), arrayOf(
+                StringBuffer::class.java, StringBuffer("42")
+            ), arrayOf(Class::class.java, String::class.java), arrayOf(
+                Long::class.java, 42
+            ), arrayOf(Int::class.java, 42), arrayOf(Char::class.java, 'c'), arrayOf(
+                Byte::class.java, "b".toByteArray()[0]
+            ), arrayOf(Double::class.java, 42.0), arrayOf(
+                Float::class.java, 42f
+            ), arrayOf(Short::class.java, 42.toShort()), arrayOf(
+                BigDecimal::class.java, BigDecimal(42)
+            ), arrayOf(AtomicInteger::class.java, AtomicInteger(42)), arrayOf(
+                AtomicLong::class.java, AtomicLong(42)
+            ), arrayOf(
+                Array<Int>::class.java, arrayOf(42)
+            ), arrayOf(java.util.Date::class.java, java.util.Date(System.currentTimeMillis() - 10000)), arrayOf(
+                Calendar::class.java, Calendar.getInstance()
+            ), arrayOf(Currency::class.java, Currency.getInstance("EUR")), arrayOf(
+                ArrayList::class.java, ArrayList(mutableListOf("foo"))
+            ), arrayOf(
+                IntArray::class.java, intArrayOf(1, 2)
+            ), arrayOf(LongArray::class.java, longArrayOf(1, 2)), arrayOf(
+                ShortArray::class.java, shortArrayOf(1, 2)
+            ), arrayOf(FloatArray::class.java, floatArrayOf(1f, 2f)), arrayOf(
+                DoubleArray::class.java, doubleArrayOf(1.0, 2.0)
+            ), arrayOf(IntArray::class.java, intArrayOf(1, 2)), arrayOf(
+                ByteArray::class.java, "42".toByteArray()
+            ), arrayOf(CharArray::class.java, "42".toCharArray()), arrayOf(
+                Array<String>::class.java, arrayOf("23", "42")
+            ), arrayOf(Array<Person>::class.java, arrayOf(TestClasses.createPerson("foo bar", Gender.MALE, 42)))
+        )
     }
 
     @Test
-    public void testPrivateClass() throws Exception {
-        final Holder<?> holder = new Holder<Object>( TestClasses.createPrivateClass( "foo" ) );
-        final Holder<?> deserialized = deserialize( serialize( holder ), Holder.class );
-        assertDeepEquals( deserialized, holder );
+    @Throws(Exception::class)
+    fun <T> testTypesAsSessionAttributes() {
+        val data = createTypesAsSessionAttributesData()
+        for (datum in data) {
+            val type = datum[0] as Class<T>
+            val instance = datum[1] as T
+            val deserialized = deserialize(serialize(instance!!), instance!!::class.java) as T
+            assertDeepEquals(deserialized, instance)
+        }
     }
 
     @Test
-    public void testCollections() throws Exception {
-        final EntityWithCollections obj = new EntityWithCollections();
-        final EntityWithCollections deserialized = deserialize( serialize( obj ), EntityWithCollections.class );
-        assertDeepEquals( deserialized, obj );
+    @Throws(Exception::class)
+    fun testTypesInContainerClass() {
+        val myContainer = MyContainer()
+        val deserialized = deserialize(serialize(myContainer), MyContainer::class.java)
+        assertDeepEquals(deserialized, myContainer)
+    }
+
+    @Test(expected = KryoException::class)
+    @Throws(Exception::class)
+    fun testClassWithoutDefaultConstructor() {
+        val obj = TestClasses.createClassWithoutDefaultConstructor("foo")
+        val deserialized = deserialize(serialize(obj), ClassWithoutDefaultConstructor::class.java)
+        assertDeepEquals(deserialized, obj)
     }
 
     @Test
-    public void testCyclicDependencies() throws Exception {
-        _kryo.setReferences(true);
-
-        final Person p1 = createPerson( "foo bar", Gender.MALE, 42, "foo.bar@example.org", "foo.bar@example.com" );
-        final Person p2 = createPerson( "bar baz", Gender.FEMALE, 42, "bar.baz@example.org", "bar.baz@example.com" );
-        p1.addFriend( p2 );
-        p2.addFriend( p1 );
-
-        final Person deserialized = deserialize( serialize( p1 ), Person.class );
-        assertDeepEquals( deserialized, p1 );
+    @Throws(Exception::class)
+    fun testPrivateClass() {
+        val holder: TestClasses.Holder<*> = TestClasses.Holder<Any>(TestClasses.createPrivateClass("foo"))
+        val deserialized = deserialize(serialize(holder), TestClasses.Holder::class.java)
+        assertDeepEquals(deserialized, holder)
     }
 
-    @SuppressWarnings("RedundantIfStatement")
-    public static class EntityWithCollections {
-        private final String[] _bars;
-        private final List<String> _foos;
-        private final Map<String, Integer> _bazens;
+    @Test
+    @Throws(Exception::class)
+    fun testCollections() {
+        val obj = EntityWithCollections()
+        val deserialized = deserialize(serialize(obj), EntityWithCollections::class.java)
+        assertDeepEquals(deserialized, obj)
+    }
 
-        public EntityWithCollections() {
-            _bars = new String[] { "foo", "bar" };
-            _foos = new ArrayList<>(Arrays.asList("foo", "bar"));
-            _bazens = new HashMap<>();
-            _bazens.put( "foo", 1 );
-            _bazens.put( "bar", 2 );
+    @Test
+    @Throws(Exception::class)
+    fun testCyclicDependencies() {
+        _kryo.setReferences(true)
+        val p1 = TestClasses.createPerson("foo bar", Gender.MALE, 42, "foo.bar@example.org", "foo.bar@example.com")
+        val p2 = TestClasses.createPerson("bar baz", Gender.FEMALE, 42, "bar.baz@example.org", "bar.baz@example.com")
+        p1.addFriend(p2)
+        p2.addFriend(p1)
+        val deserialized = deserialize(serialize(p1), Person::class.java)
+        assertDeepEquals(deserialized, p1)
+    }
+
+    class EntityWithCollections {
+        private val _bars: Array<String>
+        private val _foos: List<String>?
+        private val _bazens: MutableMap<String, Int>?
+
+        init {
+            _bars = arrayOf("foo", "bar")
+            _foos = ArrayList(mutableListOf("foo", "bar"))
+            _bazens = HashMap()
+            _bazens["foo"] = 1
+            _bazens["bar"] = 2
         }
 
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + Arrays.hashCode( _bars );
-            result = prime * result + ( ( _bazens == null )
-                ? 0
-                : _bazens.hashCode() );
-            result = prime * result + ( ( _foos == null )
-                ? 0
-                : _foos.hashCode() );
-            return result;
+        override fun hashCode(): Int {
+            val prime = 31
+            var result = 1
+            result = prime * result + Arrays.hashCode(_bars)
+            result = prime * result + (_bazens?.hashCode() ?: 0)
+            result = prime * result + (_foos?.hashCode() ?: 0)
+            return result
         }
 
-        @Override
-        public boolean equals( final Object obj ) {
-            if ( this == obj ) {
-                return true;
+        override fun equals(obj: Any?): Boolean {
+            if (this === obj) {
+                return true
             }
-            if ( obj == null ) {
-                return false;
+            if (obj == null) {
+                return false
             }
-            if ( getClass() != obj.getClass() ) {
-                return false;
+            if (javaClass != obj.javaClass) {
+                return false
             }
-            final EntityWithCollections other = (EntityWithCollections) obj;
-            if ( !Arrays.equals( _bars, other._bars ) ) {
-                return false;
+            val other = obj as EntityWithCollections
+            if (!Arrays.equals(_bars, other._bars)) {
+                return false
             }
-            if ( _bazens == null ) {
-                if ( other._bazens != null ) {
-                    return false;
+            if (_bazens == null) {
+                if (other._bazens != null) {
+                    return false
                 }
-            } else if ( !_bazens.equals( other._bazens ) ) {
-                return false;
+            } else if (_bazens != other._bazens) {
+                return false
             }
-            if ( _foos == null ) {
-                if ( other._foos != null ) {
-                    return false;
+            if (_foos == null) {
+                if (other._foos != null) {
+                    return false
                 }
-            } else if ( !_foos.equals( other._foos ) ) {
-                return false;
+            } else if (_foos != other._foos) {
+                return false
             }
-            return true;
+            return true
         }
     }
-    
-    public static void assertDeepEquals( final Object one, final Object another ) throws Exception {
-        assertDeepEquals( one, another, new IdentityHashMap<>() );
+
+    protected fun serialize(o: Any): ByteArray {
+        return serialize(_kryo, o)
     }
 
-    private static void assertDeepEquals( final Object one, final Object another, final Map<Object, Object> alreadyChecked )
-        throws Exception {
-        if ( one == another ) {
-            return;
-        }
-        if ( one == null && another != null || one != null && another == null ) {
-            Assert.fail("One of both is null: " + one + ", " + another );
-        }
-        if ( alreadyChecked.containsKey( one ) ) {
-            return;
-        }
-        alreadyChecked.put( one, another );
+    protected fun <T> deserialize(`in`: ByteArray, clazz: Class<out T>): T {
+        return deserialize(_kryo, `in`, clazz)
+    }
 
-        Assert.assertEquals( one.getClass(), another.getClass() );
-        if ( one.getClass().isPrimitive() || one instanceof String || one instanceof Character || one instanceof Boolean
-                || one instanceof Class<?> ) {
-            Assert.assertEquals( one, another );
-            return;
+    companion object {
+        @Throws(Exception::class)
+        fun assertDeepEquals(one: Any?, another: Any?) {
+            assertDeepEquals(one, another, IdentityHashMap())
         }
 
-        if ( Map.class.isAssignableFrom( one.getClass() ) ) {
-            final Map<?, ?> m1 = (Map<?, ?>) one;
-            final Map<?, ?> m2 = (Map<?, ?>) another;
-            Assert.assertEquals( m1.size(), m2.size() );
-            final Iterator<? extends Map.Entry<?, ?>> iter1 = m1.entrySet().iterator();
-            while( iter1.hasNext() ) {
-                Map.Entry<?, ?> entry1 = iter1.next();
-                assertDeepEquals(entry1.getValue(), m2.get(entry1.getKey()), alreadyChecked );
+        @Throws(Exception::class)
+        private fun assertDeepEquals(one: Any?, another: Any?, alreadyChecked: MutableMap<Any?, Any?>) {
+            if (one === another) {
+                return
             }
-            return;
-        }
-
-        if ( Number.class.isAssignableFrom( one.getClass() ) ) {
-            Assert.assertEquals( ( (Number) one ).longValue(), ( (Number) another ).longValue() );
-            return;
-        }
-
-        if ( one instanceof Currency ) {
-            // Check that the transient field defaultFractionDigits is initialized correctly (that was issue #34)
-            final Currency currency1 = ( Currency) one;
-            final Currency currency2 = ( Currency) another;
-            Assert.assertEquals( currency1.getCurrencyCode(), currency2.getCurrencyCode() );
-            Assert.assertEquals( currency1.getDefaultFractionDigits(), currency2.getDefaultFractionDigits() );
-        }
-
-        if (Collection.class.isAssignableFrom(one.getClass())) {
-            final Collection c1 = (Collection) one;
-            final Collection c2 = (Collection) another;
-            Assert.assertEquals( c1.size(), c2.size() );
-
-            final Iterator iter1 = c1.iterator();
-            final Iterator iter2 = c2.iterator();
-            while( iter1.hasNext() ) {
-                assertDeepEquals(iter1.next(), iter2.next(), alreadyChecked);
+            if (one == null && another != null || one != null && another == null) {
+                Assert.fail("One of both is null: $one, $another")
+            }
+            if (alreadyChecked.containsKey(one)) {
+                return
             }
 
-            Assert.assertFalse(iter2.hasNext());
-            return;
-        }
-
-        Class<?> clazz = one.getClass();
-        while ( clazz != null ) {
-            assertEqualDeclaredFields( clazz, one, another, alreadyChecked );
-            clazz = clazz.getSuperclass();
-        }
-    }
-
-    private static void assertEqualDeclaredFields( final Class<? extends Object> clazz, final Object one, final Object another,
-            final Map<Object, Object> alreadyChecked ) throws Exception, IllegalAccessException {
-        for ( final Field field : clazz.getDeclaredFields() ) {
-            field.setAccessible( true );
-            if ( !Modifier.isTransient( field.getModifiers() ) ) {
-                assertDeepEquals( field.get( one ), field.get( another ), alreadyChecked );
+            alreadyChecked[one] = another
+            Assert.assertEquals(one!!.javaClass, another!!.javaClass)
+            if (one.javaClass.isPrimitive || one is String || one is Char || one is Boolean || one is Class<*>) {
+                Assert.assertEquals(one, another)
+                return
+            }
+            if (MutableMap::class.java.isAssignableFrom(one.javaClass)) {
+                val m1 = one as Map<*, *>?
+                val m2 = another as Map<*, *>?
+                Assert.assertEquals(m1!!.size.toLong(), m2!!.size.toLong())
+                val iter1 = m1.entries.iterator()
+                while (iter1.hasNext()) {
+                    val (key, value) = iter1.next()
+                    assertDeepEquals(value, m2[key], alreadyChecked)
+                }
+                return
+            }
+            if (Number::class.java.isAssignableFrom(one.javaClass)) {
+                Assert.assertEquals((one as Number?)!!.toLong(), (another as Number?)!!.toLong())
+                return
+            }
+            if (one is Currency) {
+                // Check that the transient field defaultFractionDigits is initialized correctly (that was issue #34)
+                val currency1 = one
+                val currency2 = another as Currency?
+                Assert.assertEquals(currency1.currencyCode, currency2!!.currencyCode)
+                Assert.assertEquals(currency1.defaultFractionDigits.toLong(), currency2.defaultFractionDigits.toLong())
+            }
+            if (MutableCollection::class.java.isAssignableFrom(one.javaClass)) {
+                val c1 = one as Collection<*>?
+                val c2 = another as Collection<*>?
+                Assert.assertEquals(c1!!.size.toLong(), c2!!.size.toLong())
+                val iter1 = c1.iterator()
+                val iter2 = c2.iterator()
+                while (iter1.hasNext()) {
+                    assertDeepEquals(iter1.next(), iter2.next(), alreadyChecked)
+                }
+                Assert.assertFalse(iter2.hasNext())
+                return
+            }
+            var clazz: Class<*>? = one.javaClass
+            while (clazz != null) {
+                assertEqualDeclaredFields(clazz, one, another, alreadyChecked)
+                clazz = clazz.superclass
             }
         }
-    }
 
-    protected byte[] serialize( final Object o ) {
-        return serialize(_kryo, o);
-    }
-
-    public static byte[] serialize(final Kryo kryo, final Object o) {
-        if ( o == null ) {
-            throw new NullPointerException( "Can't serialize null" );
+        @Throws(Exception::class, IllegalAccessException::class)
+        private fun assertEqualDeclaredFields(clazz: Class<out Any>, one: Any, another: Any, alreadyChecked: MutableMap<Any?, Any?>) {
+            for (field in clazz.declaredFields) {
+                field.isAccessible = true
+                if (!Modifier.isTransient(field.modifiers)) {
+                    assertDeepEquals(field[one], field[another], alreadyChecked)
+                }
+            }
         }
 
-        final Output output = new Output(4096);
-        kryo.writeObject(output, o);
-        output.flush();
-        return output.getBuffer();
-    }
+        fun serialize(kryo: Kryo, o: Any): ByteArray {
+            val output = Output(4096)
+            kryo.writeObject(output, o)
+            output.flush()
+            return output.buffer
+        }
 
-    protected <T> T deserialize( final byte[] in, final Class<T> clazz ) {
-        return deserialize(_kryo, in, clazz);
-    }
-
-    public static <T> T deserialize(final Kryo kryo, final byte[] in, final Class<T> clazz) {
-        final Input input = new Input(in);
-        return kryo.readObject(input, clazz);
+        fun <T> deserialize(kryo: Kryo, `in`: ByteArray, clazz: Class<out T>): T {
+            val input = Input(`in`)
+            return kryo.readObject(input, clazz)
+        }
     }
 }

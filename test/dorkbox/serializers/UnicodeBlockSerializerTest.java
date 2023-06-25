@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package dorkbox.serializers;
 
-import static dorkbox.serializers.KryoTest.deserialize;
-import static dorkbox.serializers.KryoTest.serialize;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
@@ -62,15 +60,15 @@ public class UnicodeBlockSerializerTest {
 
     @Test
     public void testBasicRoundTrip() {
-        byte[] serialized = serialize(kryo, UnicodeBlock.UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS);
-        assertSame(deserialize(kryo, serialized, UnicodeBlock.class),
+        byte[] serialized = KryoTest.Companion.serialize(kryo, UnicodeBlock.UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS);
+        assertSame(KryoTest.Companion.deserialize(kryo, serialized, UnicodeBlock.class),
                 UnicodeBlock.UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS);
     }
 
     @Test
     public void testDeserializingUnknownInstanceReturnsNull() {
-        byte[] serialized = serialize(kryo, new ObjenesisStd().newInstance(UnicodeBlock.class));
-        assertNull(deserialize(kryo, serialized, UnicodeBlock.class));
+        byte[] serialized = KryoTest.Companion.serialize(kryo, new ObjenesisStd().newInstance(UnicodeBlock.class));
+        assertNull(KryoTest.Companion.deserialize(kryo, serialized, UnicodeBlock.class));
     }
 
     @Test

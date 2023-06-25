@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package dorkbox.serializers;
 
-import static dorkbox.serializers.KryoTest.deserialize;
-import static dorkbox.serializers.KryoTest.serialize;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
@@ -54,9 +52,9 @@ public class SubListSerializersTest {
     }
 
     private void doTest(final List<TestEnum> subList) {
-        final byte[] serialized = serialize( _kryo, subList );
+        final byte[] serialized = KryoTest.Companion.serialize( _kryo, subList );
         @SuppressWarnings( "unchecked" )
-        final List<TestEnum> deserialized = deserialize( _kryo, serialized, subList.getClass() );
+        final List<TestEnum> deserialized = KryoTest.Companion.deserialize( _kryo, serialized, subList.getClass() );
 
         assertEquals( deserialized, subList );
         assertEquals( deserialized.remove( 0 ), subList.remove( 0 ) );
@@ -122,9 +120,9 @@ public class SubListSerializersTest {
         final List<String> mylist = arrayList("1", "1", "2", "1", "1");
         final List<String> subList = mylist.subList(0, 5);
 
-        final byte[] serialized = serialize( _kryo, subList );
+        final byte[] serialized = KryoTest.Companion.serialize( _kryo, subList );
         @SuppressWarnings( "unchecked" )
-        final List<String> deserialized = deserialize( _kryo, serialized, subList.getClass() );
+        final List<String> deserialized = KryoTest.Companion.deserialize( _kryo, serialized, subList.getClass() );
 
         assertEquals( deserialized, subList );
         assertEquals( deserialized, mylist );
@@ -143,8 +141,8 @@ public class SubListSerializersTest {
         
         final List<List<String>> lists = new ArrayList<List<String>>(Arrays.asList(l1s1, l1s2, l2s1, l1, l2));
 
-        final byte[] serialized = serialize( _kryo, lists );
-        final List<List<String>> deserialized = deserialize( _kryo, serialized, lists.getClass() );
+        final byte[] serialized = KryoTest.Companion.serialize( _kryo, lists );
+        final List<List<String>> deserialized = KryoTest.Companion.deserialize( _kryo, serialized, lists.getClass() );
 
         assertEquals( deserialized, lists );
     }
@@ -162,8 +160,8 @@ public class SubListSerializersTest {
         
         final List<List<String>> lists = new ArrayList<List<String>>(Arrays.asList(l1, l2, l1s1, l1s2, l2s1));
 
-        final byte[] serialized = serialize( _kryo, lists );
-        final List<List<String>> deserialized = deserialize( _kryo, serialized, lists.getClass() );
+        final byte[] serialized = KryoTest.Companion.serialize( _kryo, lists );
+        final List<List<String>> deserialized = KryoTest.Companion.deserialize( _kryo, serialized, lists.getClass() );
 
         assertEquals( deserialized, lists );
     }
