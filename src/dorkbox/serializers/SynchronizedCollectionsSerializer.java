@@ -109,10 +109,6 @@ public class SynchronizedCollectionsSerializer extends Serializer<Object> {
                         "}", dynamicClass);
                 dynamicClass.addMethod(method);
 
-                dynamicClass.setModifiers(dynamicClass.getModifiers() & ~Modifier.STATIC);
-
-                dynamicClass.getDeclaredMethods();
-
                 final byte[] dynamicClassBytes = dynamicClass.toBytecode();
                 ClassUtils.defineClass(null, dynamicClassBytes);
             }
