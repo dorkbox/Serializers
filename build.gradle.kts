@@ -47,7 +47,7 @@ gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS   // always show th
 
 plugins {
     id("com.dorkbox.GradleUtils") version "3.17"
-    id("com.dorkbox.Licensing") version "2.22"
+    id("com.dorkbox.Licensing") version "2.24"
     id("com.dorkbox.VersionUpdate") version "2.8"
     id("com.dorkbox.GradlePublish") version "1.18"
 
@@ -58,7 +58,7 @@ object Extras {
     // set for the project
     const val description = "Kryo based serializers"
     const val group = "com.dorkbox"
-    const val version = "2.8"
+    const val version = "2.9"
 
     // set as project.ext
     const val name = "Serializers"
@@ -134,7 +134,7 @@ dependencies {
 
     testImplementation("org.bouncycastle:bcprov-jdk15on:$bcVersion")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("com.esotericsoftware:kryo:5.3.0")
+    testImplementation("com.esotericsoftware:kryo:5.5.0")
 }
 
 publishToSonatype {
