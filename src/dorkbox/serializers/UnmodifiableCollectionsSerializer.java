@@ -1,4 +1,20 @@
 /*
+ * Copyright 2023 dorkbox, llc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
  * Copyright 2010 Martin Grotzke
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +32,7 @@
  */
 package dorkbox.serializers;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,31 +51,114 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import dorkbox.jna.ClassUtils;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
+import javassist.CtNewMethod;
+import javassist.Modifier;
+
 /**
  * A kryo {@link Serializer} for unmodifiable {@link Collection}s and {@link Map}s
  * created via {@link Collections}.
  * 
  * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a>
+ * @author <a href="mailto:email@dorkbox.com">Dorkbox llc</a>
  */
 public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
-    
-    private static final Field SOURCE_COLLECTION_FIELD;
-    private static final Field SOURCE_MAP_FIELD;
-    
-    static {
-        try {
-            SOURCE_COLLECTION_FIELD = Class.forName("java.util.Collections$UnmodifiableCollection" )
-                .getDeclaredField( "c" );
-            SOURCE_COLLECTION_FIELD.setAccessible( true );
-            
 
-            SOURCE_MAP_FIELD = Class.forName("java.util.Collections$UnmodifiableMap" )
-                .getDeclaredField( "m" );
-            SOURCE_MAP_FIELD.setAccessible( true );
+    /**
+     * Gets the version number.
+     */
+    public static
+    String getVersion() {
+        return "3.0";
+    }
+
+
+    static {
+        // Add this project to the updates system, which verifies this class + UUID + version information
+        dorkbox.updates.Updates.INSTANCE.add(UnmodifiableCollectionsSerializer.class, "316353f5338341a8a3edc01d702703f8", getVersion());
+
+        try {
+            ClassPool pool = ClassPool.getDefault();
+
+            // allow non-reflection access to java.util.Collections...()
+            {
+                CtClass dynamicClass = pool.makeClass("java.util.UnmodifiableCollectionsAccessory");
+                CtMethod method = CtNewMethod.make(
+                        "public static Object getUnmodifiableCollectionField(Object nativeComp) { " +
+                        // "java.lang.System.err.println(\"Getting collection field!\" + ((java.util.Collections$UnmodifiableCollection)nativeComp).c);" +
+                        "return ((java.util.Collections$UnmodifiableCollection)nativeComp).c;" +
+                        "}", dynamicClass);
+                dynamicClass.addMethod(method);
+
+                method = CtNewMethod.make(
+                        "public static java.lang.reflect.Field initUnmodifiableMapField() { " +
+                        "java.lang.reflect.Field field = Class.forName(\"java.util.Collections$UnmodifiableMap\").getDeclaredField( \"m\" );" +
+                        "field.setAccessible( true );" +
+                        // "java.lang.System.err.println(\"updating map field!\");" +
+                        "return field;" +
+                        "}", dynamicClass);
+                dynamicClass.addMethod(method);
+
+                method = CtNewMethod.make(
+                        "public static Object getUnmodifiableMapField(java.lang.reflect.Field field, Object nativeComp) { " +
+                        // "java.lang.System.err.println(\"Getting map field!\" + field.get(nativeComp));" +
+                        "return field.get(nativeComp);" +
+                        "}", dynamicClass);
+                dynamicClass.addMethod(method);
+
+                dynamicClass.setModifiers(dynamicClass.getModifiers() & ~Modifier.STATIC);
+
+                dynamicClass.getDeclaredMethods();
+
+                final byte[] dynamicClassBytes = dynamicClass.toBytecode();
+                ClassUtils.defineClass(null, dynamicClassBytes);
+            }
+
+            // fix the accessor class to point to the generated proxy/accessory class
+            {
+                CtClass classFixer = pool.get("dorkbox.serializers.UnmodifiableCollectionJavaAccessor");
+
+                CtMethod ctMethod = classFixer.getDeclaredMethod("UnmodifiableCollection_Field");
+                ctMethod.setBody("{" +
+                                 "return java.util.UnmodifiableCollectionsAccessory.getUnmodifiableCollectionField($1);" +
+                                 "}");
+                // perform pre-verification for the modified method
+                ctMethod.getMethodInfo().rebuildStackMapForME(pool);
+
+
+                ctMethod = classFixer.getDeclaredMethod("initUnmodifiableMap_Field");
+                ctMethod.setBody("{" +
+                                 "dorkbox.serializers.UnmodifiableCollectionJavaAccessor.SOURCE_MAP_FIELD = java.util.UnmodifiableCollectionsAccessory.initUnmodifiableMapField();" +
+                                 "}");
+                // perform pre-verification for the modified method
+                ctMethod.getMethodInfo().rebuildStackMapForME(pool);
+
+
+                ctMethod = classFixer.getDeclaredMethod("UnmodifiableMap_Field");
+                ctMethod.setBody("{" +
+                                 "return java.util.UnmodifiableCollectionsAccessory.getUnmodifiableMapField(dorkbox.serializers.UnmodifiableCollectionJavaAccessor.SOURCE_MAP_FIELD, $1);" +
+                                 "}");
+                // perform pre-verification for the modified method
+                ctMethod.getMethodInfo().rebuildStackMapForME(pool);
+
+
+                // perform pre-verification for the modified method
+                ctMethod.getMethodInfo().rebuildStackMapForME(pool);
+
+
+                final byte[] classFixerBytes = classFixer.toBytecode();
+                ClassUtils.defineClass(ClassLoader.getSystemClassLoader(), classFixerBytes);
+            }
+
+
+            // setup reflection, but it's done from INSIDE THE SAME PACKAGE (so no warnings/etc)
+            UnmodifiableCollectionJavaAccessor.initUnmodifiableMap_Field();
 
         } catch ( final Exception e ) {
-            throw new RuntimeException( "Could not access source collection" +
-                    " field in java.util.Collections$UnmodifiableCollection.", e );
+            throw new RuntimeException( "Could not modify UnmodifiableCollection", e );
         }
     }
 
@@ -78,9 +175,9 @@ public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
         try {
             final UnmodifiableCollection unmodifiableCollection = UnmodifiableCollection.valueOfType( object.getClass() );
 
-            // the ordinal could be replaced by something else (e.g. a explicitly managed "id")
+            // the ordinal could be replaced by something else (e.g. an explicitly managed "id")
             output.writeInt( unmodifiableCollection.ordinal(), true );
-            kryo.writeClassAndObject( output, unmodifiableCollection.sourceCollectionField.get( object ) );
+            kryo.writeClassAndObject( output, unmodifiableCollection.getValue(object) );
         } catch ( final RuntimeException e ) {
             // Don't eat and wrap RuntimeExceptions because the ObjectBuffer.write...
             // handles SerializationException specifically (resizing the buffer)...
@@ -92,76 +189,103 @@ public class UnmodifiableCollectionsSerializer extends Serializer<Object> {
     
     @Override
     public Object copy(Kryo kryo, Object original) {
-      try {
-          final UnmodifiableCollection unmodifiableCollection = UnmodifiableCollection.valueOfType( original.getClass() );
-          Object sourceCollectionCopy = kryo.copy(unmodifiableCollection.sourceCollectionField.get(original));
-          return unmodifiableCollection.create( sourceCollectionCopy );
-      } catch ( final RuntimeException e ) {
-          // Don't eat and wrap RuntimeExceptions
-          throw e;
-      } catch ( final Exception e ) {
-          throw new RuntimeException( e );
-      }
+        try {
+            final UnmodifiableCollection unmodifiableCollection = UnmodifiableCollection.valueOfType( original.getClass() );
+            Object sourceCollectionCopy = kryo.copy(unmodifiableCollection.getValue(original));
+            return unmodifiableCollection.create( sourceCollectionCopy );
+        } catch ( final RuntimeException e ) {
+            // Don't eat and wrap RuntimeExceptions
+            throw e;
+        } catch ( final Exception e ) {
+            throw new RuntimeException( e );
+        }
     }
 
     private enum UnmodifiableCollection {
-        COLLECTION( Collections.unmodifiableCollection( Arrays.asList( "" ) ).getClass(), SOURCE_COLLECTION_FIELD ){
+        COLLECTION( Collections.unmodifiableCollection(Collections.singletonList("")).getClass() ){
             @Override
             public Object create( final Object sourceCollection ) {
                 return Collections.unmodifiableCollection( (Collection<?>) sourceCollection );
             }
+            @Override
+            public Object getValue( final Object sourceCollection ) {
+                return UnmodifiableCollectionJavaAccessor.UnmodifiableCollection_Field(sourceCollection);
+            }
         },
-        RANDOM_ACCESS_LIST( Collections.unmodifiableList( new ArrayList<Void>() ).getClass(), SOURCE_COLLECTION_FIELD ){
+        RANDOM_ACCESS_LIST( Collections.unmodifiableList( new ArrayList<Void>() ).getClass() ){
             @Override
             public Object create( final Object sourceCollection ) {
                 return Collections.unmodifiableList( (List<?>) sourceCollection );
             }
+            @Override
+            public Object getValue( final Object sourceCollection ) {
+                return UnmodifiableCollectionJavaAccessor.UnmodifiableCollection_Field(sourceCollection);
+            }
         },
-        LIST( Collections.unmodifiableList( new LinkedList<Void>() ).getClass(), SOURCE_COLLECTION_FIELD ){
+        LIST( Collections.unmodifiableList( new LinkedList<Void>() ).getClass() ){
             @Override
             public Object create( final Object sourceCollection ) {
                 return Collections.unmodifiableList( (List<?>) sourceCollection );
             }
+            @Override
+            public Object getValue( final Object sourceCollection ) {
+                return UnmodifiableCollectionJavaAccessor.UnmodifiableCollection_Field(sourceCollection);
+            }
         },
-        SET( Collections.unmodifiableSet( new HashSet<Void>() ).getClass(), SOURCE_COLLECTION_FIELD ){
+        SET( Collections.unmodifiableSet( new HashSet<Void>() ).getClass() ){
             @Override
             public Object create( final Object sourceCollection ) {
                 return Collections.unmodifiableSet( (Set<?>) sourceCollection );
             }
+            @Override
+            public Object getValue( final Object sourceCollection ) {
+                return UnmodifiableCollectionJavaAccessor.UnmodifiableCollection_Field(sourceCollection);
+            }
         },
-        SORTED_SET( Collections.unmodifiableSortedSet( new TreeSet<Void>() ).getClass(), SOURCE_COLLECTION_FIELD ){
+        SORTED_SET( Collections.unmodifiableSortedSet( new TreeSet<Void>() ).getClass() ){
             @Override
             public Object create( final Object sourceCollection ) {
                 return Collections.unmodifiableSortedSet( (SortedSet<?>) sourceCollection );
             }
+            @Override
+            public Object getValue( final Object sourceCollection ) {
+                return UnmodifiableCollectionJavaAccessor.UnmodifiableCollection_Field(sourceCollection);
+            }
         },
-        MAP( Collections.unmodifiableMap( new HashMap<Void, Void>() ).getClass(), SOURCE_MAP_FIELD ) {
+        MAP( Collections.unmodifiableMap( new HashMap<Void, Void>() ).getClass() ) {
 
             @Override
             public Object create( final Object sourceCollection ) {
                 return Collections.unmodifiableMap( (Map<?, ?>) sourceCollection );
             }
-            
+            @Override
+            public Object getValue( final Object sourceCollection ) {
+                return UnmodifiableCollectionJavaAccessor.UnmodifiableMap_Field(sourceCollection);
+            }
         },
-        SORTED_MAP( Collections.unmodifiableSortedMap( new TreeMap<Void, Void>() ).getClass(), SOURCE_MAP_FIELD ) {
+        SORTED_MAP( Collections.unmodifiableSortedMap( new TreeMap<Void, Void>() ).getClass() ) {
             @Override
             public Object create( final Object sourceCollection ) {
                 return Collections.unmodifiableSortedMap( (SortedMap<?, ?>) sourceCollection );
             }
+            @Override
+            public Object getValue( final Object sourceCollection ) {
+                return UnmodifiableCollectionJavaAccessor.UnmodifiableMap_Field(sourceCollection);
+            }
         };
         
         private final Class<?> type;
-        private final Field sourceCollectionField;
-        
-        UnmodifiableCollection( final Class<?> type, final Field sourceCollectionField ) {
+
+        UnmodifiableCollection( final Class<?> type) {
             this.type = type;
-            this.sourceCollectionField = sourceCollectionField;
         }
         
         /**
          * @param sourceCollection
          */
         public abstract Object create( Object sourceCollection );
+        public abstract Object getValue( Object sourceCollection );
+
 
         static UnmodifiableCollection valueOfType( final Class<?> type ) {
             for( final UnmodifiableCollection item : values() ) {
