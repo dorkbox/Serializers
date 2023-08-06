@@ -122,7 +122,18 @@ tasks.jar.get().apply {
 }
 
 dependencies {
+    api("com.dorkbox:JNA:1.0")
     api("com.dorkbox:Updates:1.1")
+
+
+    // how we bypass using reflection to access fields
+    api("org.javassist:javassist:3.29.2-GA")
+
+
+    val jnaVersion = "5.12.1"
+    api("net.java.dev.jna:jna-jpms:${jnaVersion}")
+    api("net.java.dev.jna:jna-platform-jpms:${jnaVersion}")
+
 
     // optionally using KRYO
     compileOnly("com.esotericsoftware:kryo:5.5.0")
