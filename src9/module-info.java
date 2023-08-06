@@ -4,6 +4,7 @@ module dorkbox.serializers {
 
     requires transitive dorkbox.updates;
 
+    requires transitive com.sun.jna;
     requires transitive com.esotericsoftware.kryo;
     requires transitive com.esotericsoftware.reflectasm;
 
